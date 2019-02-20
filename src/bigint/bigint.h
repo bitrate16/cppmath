@@ -261,7 +261,7 @@ namespace big_number {
 	 * Uses binary array for representing numbers
 	 */
 	class bigint {
-		unsigned char *map;
+		unsigned char *map; // XXX: Reference counter wrapper
 		int size = 0;
 		int len  = 0;
 		// + ~ 0
@@ -900,6 +900,62 @@ namespace big_number {
 			n.abs_mod(b);
 			return n;
 		}
+		
+		
+		/* Complete full division. quotient is put into divident */
+		static void div(bigint &divident, bigint &rest, const bigint &divisor) {
+			assert(("Can't divide by zero", !divisor.is_zero()));
+			
+			if (divisor.get_len() == 1 && divisor.get_byte(0) == 1) {
+				divident.sign = divident.sign ^ divisor.sign;
+				rest = 0;
+				return;
+			}
+			
+			if (divident.len < divisor.len) {
+				divident.set_zero();
+				return;
+			}
+			
+			bigint n;
+			bigint b = divisor;
+			int b_len = b.len;
+			b.sign = divident.sign;
+			
+			n.sign = divident.sign ^ divisor.sign;
+			
+			b.shl((divident.len - b_len) * 8);
+			
+			while (b.len >= b_len) {
+				n.shl(8);
+				
+				unsigned char res = 0;
+				
+				while (divident.abs_greater_equals(b)) {
+					divident.sub(b);
+					++res;
+				}
+				
+				if (divident.get_byte(divident.len - 1) == 0)
+					--divident.len;
+				
+				n.set_byte(0, res);
+				
+				int b_len_t = b.len;
+				b.shr(8);
+				if (b_len_t == 1)
+					b.len = 0;
+			}
+			
+			rest = divident;
+			divident.set_zero();
+			divident.sign = n.sign;
+			n.calc_len();
+			
+			for (int i = 0; i < n.get_len(); ++i)
+				divident.set_byte(i, n.get_byte(i));
+			divident.calc_len();
+		};
 		
 		
 		bigint operator-() {
