@@ -347,13 +347,13 @@ namespace big_number {
 		};
 		
 		/* Compact used space by freeing it */
-		void compact() {
+		inline void compact() {
 			while (size > 16 && len < (size >> 1))
 				map = (unsigned char*) realloc(map, size >>= 1);
 		}
 		
 		/* Enlarge map by calling realloc and filling it with zeros */
-		void enlarge() {
+		inline void enlarge() {
 			int start = size;
 			
 			map = (unsigned char*) realloc(map, size <<= 2);
@@ -493,12 +493,12 @@ namespace big_number {
 		
 		
 		/* Returns n-th byte if maps, else 0 */
-		int get_byte(int n) const {
+		inline int get_byte(int n) const {
 			return (n >= len || n < 0) ? 0 : map[n];
 		};
 		
 		/* Sets n-th byte, returns amount of reallocs */
-		int set_byte(int n, int byte) {
+		inline int set_byte(int n, int byte) {
 			if (n < 0)
 				return 0;
 			
@@ -511,14 +511,14 @@ namespace big_number {
 		}
 		
 		/* size -> new_len */
-		void calc_len() {
+		inline void calc_len() {
 			for (len = size; len > 1; --len)
 				if (map[len - 1])
 					break;
 		};
 			
 		/* len -> new_len */
-		void calc_len_down() {
+		inline void calc_len_down() {
 			for (; len > 1; --len)
 				if (map[len - 1])
 					break;
@@ -598,7 +598,7 @@ namespace big_number {
 		};
 
 		/* returns 1 if sign is 0 */
-		bool is_positive() const {
+		inline bool is_positive() const {
 			return !sign;
 		};
 
@@ -618,7 +618,7 @@ namespace big_number {
 		};
 		
 		/* Set sign of a number. 1 = negative, 0 = positive */
-		void set_sign(int s) {
+		inline void set_sign(int s) {
 			if (sign != 0 && sign != 1)
 				return;
 			
@@ -626,7 +626,7 @@ namespace big_number {
 		};
 		
 		/* Set number to zero */
-		void set_zero() {
+		inline void set_zero() {
 			for (int i = 0; i < len; ++i)
 				map[i] = 0;
 			len = 1;
