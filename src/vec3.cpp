@@ -128,9 +128,9 @@ double vec3::smul(const vec3 &v) {
 
 /* Vector product */
 vec3 vec3::vmul(const vec3 &v) {
-	return vec3(0, 0, v.x * v.y);
+	return vec3(y * v.z - z * v.y, z * v.x - x * v.z, x * v.y - y * v.x);
 }
-		
+
 		
 // [[ M A T H ]]
 
