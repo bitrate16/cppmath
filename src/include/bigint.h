@@ -1465,13 +1465,16 @@ namespace big_number {
 		};
 	};
 	
+	
 	/* literal for <bigint>_g from long long */
-	big_number::bigint operator "" _g(unsigned long long i) {
+	/* big_number::bigint operator "" _g(unsigned long long i) {
 		return big_number::bigint(i);
 	};
+	*/
 
 	/* literal for <bigint>_g from string */
-	big_number::bigint operator "" _g(const char *decimal_string, size_t s) {
+	/* big_number::bigint operator "" _g(const char *decimal_string, size_t s) {
 		return big_number::bigint(decimal_string, 10);
 	};
+	*/
 }
