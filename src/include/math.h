@@ -18,11 +18,11 @@
 
 #pragma once
 
-#include "vec2.h"
-#include "vec2.h"
+#include <limits>
 
-#include <iostream>
-using namespace std;
+#include "vec2.h"
+#include "vec2.h"
+#include "interval.h"
 
 namespace cppmath {
 	namespace math {
@@ -86,12 +86,12 @@ namespace cppmath {
 		}
 		
 		/* Checks for 0 < |x| < |b| */
-		inline bool abs_interval(double x, double b) {
+		inline bool in_abs_interval(double x, double b) {
 			return 0 < (x = abs(x)) && x < abs(b);
 		};
 		
 		/* Checks for 0 < x < b */
-		inline bool interval(double x, double b) {
+		inline bool in_interval(double x, double b) {
 			return 0 < x && x < b || 0 < (x = -x) && x < -b;
 		};
 		
@@ -128,13 +128,13 @@ namespace cppmath {
 				// double Pa = s15 / s16;
 				// double Pb = s13 / s16;
 				
-				if (interval(Pc, s11)) // A < C < B
-					if (interval(Pd, s11)) // A < C <> D < B
+				if (in_interval(Pc, s11)) // A < C < B
+					if (in_interval(Pd, s11)) // A < C <> D < B
 						return OVERLAP_STRAIGHT_CONTAIN;
 					else
 						return OVERLAP_STRAIGHT;
-				else if (interval(Pd, s11)) // A < C < B
-					if (interval(Pc, s11)) // A < D <> C < B
+				else if (in_interval(Pd, s11)) // A < C < B
+					if (in_interval(Pc, s11)) // A < D <> C < B
 						return OVERLAP_STRAIGHT_CONTAIN;
 					else
 						return OVERLAP_STRAIGHT;
@@ -144,17 +144,17 @@ namespace cppmath {
 					return NOINTERSECT_STRAIGHT;
 			}
 			
-			if (abs_interval(Dx, Dt))
+			if (in_abs_interval(Dx, Dt))
 				if (Dy == 0 || Dy == Dt) // Overlap single node { 2 }
 					return INTERSECT_NODE;
-				else if (abs_interval(Dy, Dt)) // Intersection { 1 }
+				else if (in_abs_interval(Dy, Dt)) // Intersection { 1 }
 					return INTERSECT_NORMAL;
 				else // No intersection { 0 }
 					return NOINTERSECT_UNPARALLEL;
-			else if (abs_interval(Dy, Dt))
+			else if (in_abs_interval(Dy, Dt))
 				if (Dx == 0 || Dx == Dt) // Overlap single node { 2 }
 					return INTERSECT_NODE;
-				else if (abs_interval(Dx, Dt)) // Intersection { 1 }
+				else if (in_abs_interval(Dx, Dt)) // Intersection { 1 }
 					return INTERSECT_NORMAL;
 				else // No intersection { 0 }
 					return NOINTERSECT_UNPARALLEL;
@@ -164,6 +164,57 @@ namespace cppmath {
 				return NOINTERSECT_UNPARALLEL;
 			
 			return UNDEFINED;
+		};
+	
+		/*
+		 *
+		 *                B
+		 *                |
+		 *      -1        |        +1
+		 *                |
+		 *          C*    |     
+		 *                |         *D
+		 *                |
+		 *                *E = 0
+		 *                |
+		 *                A
+		 *
+		 *
+		 */
+		enum RIGHT_TURN2 {
+			RT_LEFT      = -1,
+			RT_COLLINEAR =  0,
+			RT_RIGHT     =  1
+		};
+		
+		RIGHT_TURN2 right_turn(vec2 x, vec2 A, vec2 B) {
+			double p = (B.x - A.x) * (x.y - A.y);
+			double q = (x.x - A.x) * (B.y - A.y);
+			
+			double eps = (std::abs(p) + std::abs(q)) * std::numeric_limits<double>::epsilon() * 4;
+			
+			double det = p - q;
+			
+			if (det > eps)
+				return RT_RIGHT;
+			if (det < -eps)
+				return RT_LEFT;
+			
+			interval iax(A.x), iay(A.y), ibx(B.x), iby(B.y), ixx(x.x), ixy(x.y);
+			
+			interval ip = (ibx - iax) * (ixy - iay);
+			interval iq = (ixx - iax) * (iby - iay);
+			
+			interval idet = ip - iq;
+			
+			if (!idet.has(0.0))
+				if (idet > 0)
+					return RT_RIGHT;
+				else
+					return RT_LEFT;
+			
+			// Assume no more precision
+			return RT_COLLINEAR;
 		};
 	};
 };
