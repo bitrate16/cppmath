@@ -37,6 +37,7 @@ namespace spaint {
 		Display *dsp;
 		Window   win;
 		GC        gc;
+		XGCValues values;
 		
 		Colormap cmap;
 		XColor current;
@@ -170,8 +171,7 @@ namespace spaint {
 			// Create GC
 			unsigned long valuemask;
 			
-			XGCValues values;
-			paint.gc = XCreateGC(paint.dsp, paint.win, valuemask, &values);
+			paint.gc = XCreateGC(paint.dsp, paint.win, valuemask, &paint.values);
 			if (paint.gc < 0)
 				throw "failed create GC";
 			
@@ -265,6 +265,14 @@ namespace spaint {
 			++n;
 		};
 	
+		int get_width() {
+			return width;
+		};
+		
+		int get_height() {
+			return height;
+		};
+		
 		// Event handling
 		int get_mouse_x() {
 			if (evt.type == ButtonPress || evt.type == ButtonRelease || evt.type == MotionNotify)
