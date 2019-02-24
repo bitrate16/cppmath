@@ -2,10 +2,10 @@
 
 #include <X11/Xlib.h>
 #include <stdlib.h>
+#include <functional>
 
 // Require $(pkg-config --cflags --libs x11) linking
-#include<iostream>
-using namespace std;
+
 // Simple paint
 namespace spaint {
 	
@@ -14,9 +14,9 @@ namespace spaint {
 	class component {
 		friend window;
 		
-		window* win = nullptr;
 	
 	public:
+		window* win;
 	
 		inline window& get_window() {
 			return *win;
@@ -142,7 +142,7 @@ namespace spaint {
 																					background(_background) {
 			if (comp == nullptr)
 				throw "component is null";
-																						
+							
 			comp->win = this;
 																						
 			paint.dsp = XOpenDisplay(nullptr);
@@ -205,6 +205,25 @@ namespace spaint {
 			comp->create();
 		};
 		
+		window& operator=(const window& w) {
+			this->evt = w.evt;
+			this->has_event = w.has_event;
+			this->white = w.white;
+			this->black = w.black;
+			this->comp = w.comp;
+			this->screen = w.screen;
+			this->background = w.background;
+			this->wmDelete = w.wmDelete;
+			this->state = w.state;
+			this->width = w.width;
+			this->height = w.height;
+			this->paint = w.paint;
+			
+			// Pass pointer to new window on assignment
+			if (this->comp)
+				this->comp->win = this;
+		};
+		
 		inline spaint& get_paint() {
 			return paint;
 		};
@@ -227,11 +246,11 @@ namespace spaint {
 			has_event = 0;
 			return evt;
 		};
-		
+		int n = 0;
 		void start() {
 			comp->start();
 			
-			while (state) {cout << "state = " << state << endl;
+			while (state) {
 				check_event();
 				
 				comp->loop();
@@ -243,6 +262,7 @@ namespace spaint {
 	
 		void stop() {
 			state = 0;
+			++n;
 		};
 	
 		// Event handling
