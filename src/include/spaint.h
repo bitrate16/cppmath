@@ -196,8 +196,8 @@ namespace spaint {
 
 			// Input
 			long eventMask = StructureNotifyMask;
-			eventMask |= ButtonPressMask | ButtonReleaseMask | MotionNotify // Mouse
-			           | MotionNotify    | KeyPressMask      | KeyReleaseMask;
+			eventMask |= ButtonPressMask | ButtonReleaseMask // Mouse
+			           | KeyPressMask      | KeyReleaseMask;
 			XSelectInput(paint.dsp, paint.win, eventMask);
 			
 			
@@ -276,24 +276,16 @@ namespace spaint {
 			return height;
 		};
 		
-		// Event handling
-		int get_mouse_x() {
-			if (evt.type == ButtonPress || evt.type == ButtonRelease)
-				return evt.xbutton.x;
-			return -1;
+		inline void clear_events() {
+			while (check_event()) get_event();
 		};
 		
-		int get_mouse_y() {
+		// Event handling
+		int get_scroll() { 
 			if (evt.type == ButtonPress || evt.type == ButtonRelease)
-				return evt.xbutton.y;
-			return -1;
-		};
-	
-		int get_scroll() {
-			if (evt.type == MotionNotify)
 				if (evt.xbutton.button == Button4)
 					return 1;
-				if (evt.xbutton.button == Button5)
+				else if (evt.xbutton.button == Button5)
 					return -1;
 			return 0;
 		};
@@ -308,12 +300,12 @@ namespace spaint {
 				return evt.xbutton.y;
 		};
 	
-		bool has_scroll_event(bool ignore_other = 1) {
+		bool has_scroll_event(bool ignore_other = 1) { // pop all events till expected reached
 			while (check_event()) {
-				if (evt.type == MotionNotify) {
+				if ((evt.type == ButtonPress || evt.type == ButtonRelease) && (evt.xbutton.button == Button4 || evt.xbutton.button == Button5)) {
 					get_event();
 					return 1;
-				} else if (ignore_other)
+				} else if (!ignore_other) 
 					return 0;
 				get_event();
 			}
@@ -322,16 +314,28 @@ namespace spaint {
 	
 		bool has_mouse_event(bool ignore_other = 1) {
 			while (check_event()) {
-				if (evt.type == ButtonPress || evt.type == ButtonRelease) {
+				if ((evt.type == ButtonPress || evt.type == ButtonRelease) && !(evt.xbutton.button == Button4 || evt.xbutton.button == Button5)) {
 					get_event();
 					return 1;
-				} else if (ignore_other)
+				} else if (!ignore_other)
 					return 0;
 				get_event();
 			}
 			return 0;
 		};
 		
+		int get_mouse_x() {
+			if (evt.type == ButtonPress || evt.type == ButtonRelease)
+				return evt.xbutton.x;
+			return -1;
+		};
+		
+		int get_mouse_y() {
+			if (evt.type == ButtonPress || evt.type == ButtonRelease)
+				return evt.xbutton.y;
+			return -1;
+		};
+	
 		// Returns number of pressed button
 		int get_button_down() {
 			if (evt.type == ButtonPress)
@@ -349,7 +353,7 @@ namespace spaint {
 				if (evt.type == KeyPress || evt.type == KeyRelease) {
 					get_event();
 					return 1;
-				} else if (ignore_other)
+				} else if (!ignore_other)
 					return 0;
 				get_event();
 			}
