@@ -4,7 +4,8 @@
 #include <stdlib.h>
 
 // Require $(pkg-config --cflags --libs x11) linking
-
+#include<iostream>
+using namespace std;
 // Simple paint
 namespace spaint {
 	
@@ -17,12 +18,12 @@ namespace spaint {
 	
 	public:
 	
-		inline window& get_window() {
-			return *win;
+		inline window* get_window() {
+			return win;
 		};
 	
 		virtual void start() {};
-		virtual void exit() {};
+		virtual void stop() {};
 		
 		virtual void create() {};
 		virtual void destroy() {};
@@ -230,18 +231,14 @@ namespace spaint {
 		void start() {
 			comp->start();
 			
-			while (state) {
+			while (state) {cout << "state = " << state << endl;
 				check_event();
 				
 				comp->loop();
 			}
 			
-			comp->exit();
+			comp->stop();
 			comp->destroy();
-		};
-		
-		void exit() {
-			state = 0;
 		};
 	
 		void stop() {
