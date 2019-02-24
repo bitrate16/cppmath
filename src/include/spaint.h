@@ -18,8 +18,8 @@ namespace spaint {
 	
 	public:
 	
-		inline window* get_window() {
-			return win;
+		inline window& get_window() {
+			return *win;
 		};
 	
 		virtual void start() {};
