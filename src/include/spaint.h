@@ -84,13 +84,31 @@ namespace spaint {
 		};
 	};
 	
-	struct event {
-		XEvent evt;
-		
-	};
-	
 	class window {		
-		event evt;
+		XEvent evt;
+		bool has_event = 0;
+		
+		void pump_event() {
+			if (has_event)
+				return 1;
+			
+			has_event = 0;
+			while (XPending(paint.dsp)) {
+				XNextEvent(paint.dsp, &evt);
+				if (evt.type == ClientMessage) // Pump quit
+					if (evt.xclient.data.l[0] == wmDelete) {
+						loop = 0;
+						return;
+					}
+				if (evt.type == ConfigureNotify) // Pump resize
+					if (evt.xconfigure.width != width || evt.xconfigure.height != height) {
+						width = evt.xconfigure.width;
+						height = evt.xconfigure.height;
+						continue;
+					}
+				has_event = 1;
+			}
+		};
 		
 		unsigned int white;
 		unsigned int black;
@@ -109,12 +127,6 @@ namespace spaint {
 		
 		// Is running
 		bool state = 1;
-		
-		void pump_event() {
-			while (XPending(paint.dsp)) {
-				
-			}
-		};
 		
 	public:
 		
@@ -197,28 +209,23 @@ namespace spaint {
 		inline spaint& get_paint() {
 			return paint;
 		};
-				
+		
+		// Check for new events, skip quit & resize
 		inline bool check_event() {
-			if (has_event)
-				return 1;
-			
-			if (XPending(paint.dsp)) {
-				
-			}
+			return pump_event();
 		};
 		
-		inline event get_event() {
-			return 
+		// Get event
+		inline XEvent& get_event() {
+			return evt;
 		};
 		
 		void start() {
 			comp->start();
 			
 			while (state) {
-				pump_event();
+				check_event();
 				
-				
-				//XCheckWindowEvent();
 				comp->loop();
 			}
 			
