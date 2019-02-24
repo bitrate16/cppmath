@@ -212,8 +212,12 @@ namespace spaint {
 		
 		// Check for new events, skip quit & resize
 		inline bool check_event() {
+			// Pump next event.
+			// return 1 if had next event, 0 else.
 			pump_event();
-			return has_event;
+			bool _has_event;
+			has_event = 0;
+			return _has_event;
 		};
 		
 		// Get event
@@ -236,6 +240,19 @@ namespace spaint {
 		
 		void exit() {
 			state = 0;
+		};
+	
+		// Event handling
+		int get_mouse_x() {
+			if (evt.type == ButtonPress || evt.type == ButtonRelease || evt.type == MotionNotify)
+				return evt.xbutton.x;
+			return -1;
+		};
+		
+		int get_mouse_y() {
+			if (evt.type == ButtonPress || evt.type == ButtonRelease || evt.type == MotionNotify)
+				return evt.xbutton.y;
+			return -1;
 		};
 	};
 };
