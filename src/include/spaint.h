@@ -288,13 +288,13 @@ namespace spaint {
 		};
 		
 		// Returns number of pressed key
-		int get_key_down(int button) {
+		int get_key_down() {
 			if (evt.type == KeyPress)
 				return evt.xkey.keycode;
 		};
 		
 		// Returns number of released key
-		int get_key_up(int button) {
+		int get_key_up() {
 			if (evt.type == KeyRelease)
 				return evt.xkey.keycode;
 		};
