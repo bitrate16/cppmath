@@ -90,14 +90,14 @@ namespace spaint {
 		
 		void pump_event() {
 			if (has_event)
-				return 1;
+				return;
 			
 			has_event = 0;
 			while (XPending(paint.dsp)) {
 				XNextEvent(paint.dsp, &evt);
 				if (evt.type == ClientMessage) // Pump quit
 					if (evt.xclient.data.l[0] == wmDelete) {
-						loop = 0;
+						state = 0;
 						return;
 					}
 				if (evt.type == ConfigureNotify) // Pump resize
@@ -212,7 +212,8 @@ namespace spaint {
 		
 		// Check for new events, skip quit & resize
 		inline bool check_event() {
-			return pump_event();
+			pump_event();
+			return has_event;
 		};
 		
 		// Get event
