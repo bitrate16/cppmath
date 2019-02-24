@@ -1,4 +1,6 @@
 /*
+    primitive drawing framework using xlib
+	
 	cpp math utilities
     Copyright (C) 2019-3041  bitrate16
 
