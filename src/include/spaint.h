@@ -76,6 +76,9 @@ namespace spaint {
 			XDrawArc(dsp, win, gc, x, y, width, height, angle1, angle2);
 		};
 		
+		inline void fill_rect(int x, int y, int width, int height) {
+			XFillRectangle(dsp, win, gc, x, y, width, height);
+		};
 		
 		inline void line_style(int line_width, int line_style = LineSolid, int cap_style = CapButt, int join_style = JoinBevel) {
 			XSetLineAttributes(dsp, gc, line_width, line_style, cap_style, join_style);
