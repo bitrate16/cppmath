@@ -278,21 +278,44 @@ namespace spaint {
 		
 		// Event handling
 		int get_mouse_x() {
-			if (evt.type == ButtonPress || evt.type == ButtonRelease || evt.type == MotionNotify)
+			if (evt.type == ButtonPress || evt.type == ButtonRelease)
 				return evt.xbutton.x;
 			return -1;
 		};
 		
 		int get_mouse_y() {
-			if (evt.type == ButtonPress || evt.type == ButtonRelease || evt.type == MotionNotify)
+			if (evt.type == ButtonPress || evt.type == ButtonRelease)
 				return evt.xbutton.y;
 			return -1;
 		};
 	
-		bool has_mouse_event() {
+		int get_scroll() {
+			if (evt.type == MotionNotify)
+				if (evt.xbutton.button == Button4)
+					return 1;
+				if (evt.xbutton.button == Button5)
+					return -1;
+			return 0;
+		};
+	
+		int get_scroll_x() {
+			if (evt.type == ButtonRelease)
+				return evt.xbutton.x;
+		};
+	
+		int get_scroll_y() {
+			if (evt.type == ButtonRelease)
+				return evt.xbutton.y;
+		};
+	
+		bool has_scroll_event() {
+			return evt.type == MotionNotify;
+		};
+	
+		bool has_mouse_move_event() {
 			while (check_event()) {
 				get_event();
-				if (evt.type == ButtonPress || evt.type == ButtonRelease || evt.type == MotionNotify)
+				if (evt.type == ButtonPress || evt.type == ButtonRelease)
 					return 1;
 			}
 			return 0;
