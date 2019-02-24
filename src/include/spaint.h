@@ -309,7 +309,12 @@ namespace spaint {
 		};
 	
 		bool has_scroll_event() {
-			return evt.type == MotionNotify;
+			while (check_event()) {
+				get_event();
+				if (evt.type == MotionNotify)
+					return 1;
+			}
+			return 0;
 		};
 	
 		bool has_mouse_move_event() {
