@@ -267,13 +267,13 @@ namespace spaint {
 		};
 		
 		// Returns number of pressed button
-		int get_button_down(int button) {
+		int get_button_down() {
 			if (evt.type == ButtonPress)
 				return evt.xbutton.button;
 		};
 		
 		// Returns number of released button
-		int get_button_up(int button) {
+		int get_button_up() {
 			if (evt.type == ButtonRelease)
 				return evt.xbutton.button;
 		};
