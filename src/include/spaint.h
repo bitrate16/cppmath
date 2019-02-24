@@ -88,10 +88,8 @@ namespace spaint {
 		XEvent evt;
 		bool has_event = 0;
 		
-		void pump_event() {
-			if (has_event)
-				return;
-			
+		// Extract next event
+		void pump_event() {			
 			has_event = 0;
 			while (XPending(paint.dsp)) {
 				XNextEvent(paint.dsp, &evt);
@@ -212,16 +210,20 @@ namespace spaint {
 		
 		// Check for new events, skip quit & resize
 		inline bool check_event() {
-			// Pump next event.
-			// return 1 if had next event, 0 else.
+			if (has_event)
+				return 1;
 			pump_event();
-			bool _has_event;
-			has_event = 0;
-			return _has_event;
+			return has_event;
+		};
+		
+		inline bool next_event() {
+			pump_event();
+			return has_event;
 		};
 		
 		// Get event
 		inline XEvent& get_event() {
+			has_event = 0;
 			return evt;
 		};
 		
@@ -253,6 +255,48 @@ namespace spaint {
 			if (evt.type == ButtonPress || evt.type == ButtonRelease || evt.type == MotionNotify)
 				return evt.xbutton.y;
 			return -1;
+		};
+	
+		bool has_mouse_event() {
+			while (check_event()) {
+				get_event();
+				if (evt.type == ButtonPress || evt.type == ButtonRelease || evt.type == MotionNotify)
+					return 1;
+			}
+			return 0;
+		};
+		
+		// Returns number of pressed button
+		int get_button_down(int button) {
+			if (evt.type == ButtonPress)
+				return evt.xbutton.button;
+		};
+		
+		// Returns number of released button
+		int get_button_up(int button) {
+			if (evt.type == ButtonRelease)
+				return evt.xbutton.button;
+		};
+	
+		bool has_key_event() {
+			while (check_event()) {
+				get_event();
+				if (evt.type == KeyPress || evt.type == KeyRelease)
+					return 1;
+			}
+			return 0;
+		};
+		
+		// Returns number of pressed key
+		int get_key_down(int button) {
+			if (evt.type == KeyPress)
+				return evt.xkey.keycode;
+		};
+		
+		// Returns number of released key
+		int get_key_up(int button) {
+			if (evt.type == KeyRelease)
+				return evt.xkey.keycode;
 		};
 	};
 };
