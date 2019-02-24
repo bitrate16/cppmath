@@ -244,6 +244,10 @@ namespace spaint {
 			state = 0;
 		};
 	
+		void stop() {
+			state = 0;
+		};
+	
 		// Event handling
 		int get_mouse_x() {
 			if (evt.type == ButtonPress || evt.type == ButtonRelease || evt.type == MotionNotify)
