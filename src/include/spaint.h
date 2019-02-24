@@ -308,20 +308,26 @@ namespace spaint {
 				return evt.xbutton.y;
 		};
 	
-		bool has_scroll_event() {
+		bool has_scroll_event(bool ignore_other = 1) {
 			while (check_event()) {
-				get_event();
-				if (evt.type == MotionNotify)
+				if (evt.type == MotionNotify) {
+					get_event();
 					return 1;
+				} else if (ignore_other)
+					return 0;
+				get_event();
 			}
 			return 0;
 		};
 	
-		bool has_mouse_move_event() {
+		bool has_mouse_event(bool ignore_other = 1) {
 			while (check_event()) {
-				get_event();
-				if (evt.type == ButtonPress || evt.type == ButtonRelease)
+				if (evt.type == ButtonPress || evt.type == ButtonRelease) {
+					get_event();
 					return 1;
+				} else if (ignore_other)
+					return 0;
+				get_event();
 			}
 			return 0;
 		};
@@ -338,11 +344,14 @@ namespace spaint {
 				return evt.xbutton.button;
 		};
 	
-		bool has_key_event() {
+		bool has_key_event(bool ignore_other = 1) {
 			while (check_event()) {
-				get_event();
-				if (evt.type == KeyPress || evt.type == KeyRelease)
+				if (evt.type == KeyPress || evt.type == KeyRelease) {
+					get_event();
 					return 1;
+				} else if (ignore_other)
+					return 0;
+				get_event();
 			}
 			return 0;
 		};
