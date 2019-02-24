@@ -353,5 +353,30 @@ namespace spaint {
 			if (evt.type == KeyRelease)
 				return evt.xkey.keycode;
 		};
+	
+		// Result of get_pointer
+		struct pointer {
+			// pointer relative location
+			int x, y,
+				// window location
+				win_x, win_y;
+			
+			pointer(int x, int y, int win_x, int win_y) {
+				this->x = x;
+				this->y = y;
+				this->win_x = win_x;
+				this->win_y = win_y;
+			};
+		};
+		
+		pointer get_pointer() {
+			int win_x, win_y, root_x, root_y = 0;
+			unsigned int mask = 0;
+			Window child_win, root_win;
+			XQueryPointer(paint.dsp, paint.win,
+							&child_win, &root_win,
+							&root_x, &root_y, &win_x, &win_y, &mask);
+			return pointer(win_x, win_y, root_x, root_y);
+		};
 	};
 };
