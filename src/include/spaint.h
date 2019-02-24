@@ -84,8 +84,13 @@ namespace spaint {
 		};
 	};
 	
-	class window {		
+	struct event {
 		XEvent evt;
+		
+	};
+	
+	class window {		
+		event evt;
 		
 		unsigned int white;
 		unsigned int black;
@@ -104,6 +109,12 @@ namespace spaint {
 		
 		// Is running
 		bool state = 1;
+		
+		void pump_event() {
+			while (XPending(paint.dsp)) {
+				
+			}
+		};
 		
 	public:
 		
@@ -171,7 +182,8 @@ namespace spaint {
 
 			// Input
 			long eventMask = StructureNotifyMask;
-			eventMask |= ButtonPressMask | ButtonReleaseMask | MotionNotify | KeyPressMask | KeyReleaseMask;
+			eventMask |= ButtonPressMask | ButtonReleaseMask | MotionNotify // Mouse
+			           | MotionNotify    | KeyPressMask      | KeyReleaseMask;
 			XSelectInput(paint.dsp, paint.win, eventMask);
 			
 			
@@ -185,11 +197,27 @@ namespace spaint {
 		inline spaint& get_paint() {
 			return paint;
 		};
+				
+		inline bool check_event() {
+			if (has_event)
+				return 1;
+			
+			if (XPending(paint.dsp)) {
+				
+			}
+		};
+		
+		inline event get_event() {
+			return 
+		};
 		
 		void start() {
 			comp->start();
 			
 			while (state) {
+				pump_event();
+				
+				
 				//XCheckWindowEvent();
 				comp->loop();
 			}
