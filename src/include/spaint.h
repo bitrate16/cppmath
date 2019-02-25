@@ -51,7 +51,7 @@ namespace spaint {
 		virtual void loop() {};
 	};
 	
-	class spaint {
+	class painter {
 		friend class window;
 		
 		Display *dsp;
@@ -156,7 +156,7 @@ namespace spaint {
 		int width;
 		int height;
 		
-		spaint paint;
+		painter paint;
 		
 		window() {};
 		
@@ -192,7 +192,7 @@ namespace spaint {
 			
 			
 			// Create GC
-			unsigned long valuemask;
+			unsigned long valuemask = 0;
 			
 			paint.gc = XCreateGC(paint.dsp, paint.win, valuemask, &paint.values);
 			if (paint.gc < 0)
@@ -247,7 +247,7 @@ namespace spaint {
 				this->comp->win = this;
 		};
 		
-		inline spaint& get_paint() {
+		inline painter& get_paint() {
 			return paint;
 		};
 		
