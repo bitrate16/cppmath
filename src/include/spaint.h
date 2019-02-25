@@ -53,6 +53,8 @@ namespace spaint {
 		virtual void create() {};
 		virtual void destroy() {};
 		
+		virtual void resize() {};
+		
 		virtual void loop() {};
 	};
 	
@@ -86,7 +88,7 @@ namespace spaint {
 			XClearWindow(display, win);
 		};
 		
-		inline void clear_area(int x, int y, int width, int height) {
+		inline void clear_rect(int x, int y, int width, int height) {
 			XClearArea(display, win, x, y, width, height, 0);
 		};
 		
@@ -118,6 +120,11 @@ namespace spaint {
 			XSetFillStyle(display, gc, style);
 		};
 	
+		void init_font(const char* font_name = "fixed") {
+			font = XLoadQueryFont(display, font_name);
+			XSetFont(display, gc, font->fid);
+		};
+		
 		inline void text(int x, int y, const char *string) {
 			if (!font)
 				throw std::runtime_error("font not loaded");
@@ -134,22 +141,27 @@ namespace spaint {
 		bool has_event = 0;
 		
 		// Extract next event
-		void pump_event() {			
+		void pump_event(bool wait_for = 0) {			
 			has_event = 0;
-			while (XPending(paint.display)) {
+			while (wait_for || XPending(paint.display)) {
 				XNextEvent(paint.display, &evt);
-				if (evt.type == ClientMessage) // Pump quit
+				if (evt.type == ClientMessage) { // Pump quit
 					if (evt.xclient.data.l[0] == wmDelete) {
 						state = 0;
 						return;
 					}
-				if (evt.type == ConfigureNotify) // Pump resize
+				} else if (evt.type == ConfigureNotify) // Pump resize
 					if (evt.xconfigure.width != width || evt.xconfigure.height != height) {
 						width = evt.xconfigure.width;
 						height = evt.xconfigure.height;
+						
+						if (comp)
+							comp->resize();
 						continue;
 					}
+					
 				has_event = 1;
+				break;
 			}
 		};
 		
@@ -180,7 +192,7 @@ namespace spaint {
 		
 		window() {};
 		
-		window(component* _comp, int _width, int _height, bool _background = 1, bool _font = 0) : comp(_comp), 
+		window(component* _comp, int _width, int _height, bool _background = 1) : comp(_comp), 
 																					width(_width), 
 																					height(_height), 
 																					background(_background) {
@@ -230,13 +242,6 @@ namespace spaint {
 			XSync(paint.display, false);
 			
 			
-			// Set up font
-			if (_font) {
-				paint.font = XLoadQueryFont (paint.display, "fixed");
-				XSetFont(paint.display, paint.gc, paint.font->fid);
-			}
-			
-			
 			// Create colormap
 			paint.cmap = DefaultColormap(paint.display, screen);
 			
@@ -282,6 +287,35 @@ namespace spaint {
 			return paint;
 		};
 		
+		void start() {
+			comp->start();
+			
+			while (state) {
+				check_event();
+				
+				comp->loop();
+			}
+			
+			comp->stop();
+			comp->destroy();
+		};
+	
+		void stop() {
+			state = 0;
+		};
+	
+		int get_width() {
+			return width;
+		};
+		
+		int get_height() {
+			return height;
+		};
+		
+		
+		// E V E N T _ H A D N L I N G
+		
+		
 		// Check for new events, skip quit & resize
 		inline bool check_event() {
 			if (has_event)
@@ -300,41 +334,17 @@ namespace spaint {
 			has_event = 0;
 			return evt;
 		};
-		int n = 0;
-		void start() {
-			comp->start();
-			
-			while (state) {
-				check_event();
-				
-				comp->loop();
-			}
-			
-			comp->stop();
-			comp->destroy();
-		};
-	
-		void stop() {
-			state = 0;
-			++n;
-		};
-	
-		int get_width() {
-			return width;
-		};
-		
-		int get_height() {
-			return height;
-		};
-		
-		
-		// E V E N T _ H A D N L I N G
-		
 		
 		inline void clear_events() {
 			while (check_event()) get_event();
 		};
 		
+		inline void wait_event() {
+			if (check_event())
+				return;
+			
+			pump_event(1);
+		};
 		
 		// Scrolling
 		int get_scroll() { 
