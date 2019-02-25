@@ -23,6 +23,8 @@
 #include <X11/Xlib.h>
 #include <stdlib.h>
 #include <functional>
+#include <cstring>
+#include <exception>
 
 // Require $(pkg-config --cflags --libs x11) linking
 
@@ -31,6 +33,7 @@ namespace spaint {
 	
 	// Scene wrapper
 	class window;
+	class painter;
 	class component {
 		friend window;
 		
@@ -41,6 +44,8 @@ namespace spaint {
 		inline window& get_window() {
 			return *win;
 		};
+	
+		inline painter& get_paint();
 	
 		virtual void start() {};
 		virtual void stop() {};
@@ -54,10 +59,11 @@ namespace spaint {
 	class painter {
 		friend class window;
 		
-		Display *dsp;
-		Window   win;
-		GC        gc;
+		Display *display;
+		Window       win;
+		GC            gc;
 		XGCValues values;
+		XFontStruct* font = nullptr;
 		
 		Colormap cmap;
 		XColor current;
@@ -69,43 +75,57 @@ namespace spaint {
 			current.red = r << 8;
 			current.green = g << 8;
 			current.blue = b << 8;
-			Status rc = XAllocColor(dsp, cmap, &current);
+			Status rc = XAllocColor(display, cmap, &current);
 			if (rc == 0)
 				return 0;
-			XSetForeground(dsp, gc, current.pixel);
+			XSetForeground(display, gc, current.pixel);
 			return 1;
 		};
 		
 		inline void clear() {
-			XClearWindow(dsp, win);
+			XClearWindow(display, win);
+		};
+		
+		inline void clear_area(int x, int y, int width, int height) {
+			XClearArea(display, win, x, y, width, height, 0);
 		};
 		
 		inline void flush() {
-			XFlush(dsp);
+			XFlush(display);
 		};
 		
 		inline void point(int x, int y) {
-			XDrawPoint(dsp, win, gc, x, y);
+			XDrawPoint(display, win, gc, x, y);
 		};
 		
 		inline void line(int x1, int y1, int x2, int y2) {
-			XDrawLine(dsp, win, gc, x1, y1, x2, y2);
+			XDrawLine(display, win, gc, x1, y1, x2, y2);
 		};
 		
 		inline void arc(int x, int y, int width, int height, int angle1 = 0, int angle2 = 360 * 64) {
-			XDrawArc(dsp, win, gc, x, y, width, height, angle1, angle2);
+			XDrawArc(display, win, gc, x, y, width, height, angle1, angle2);
 		};
 		
 		inline void fill_rect(int x, int y, int width, int height) {
-			XFillRectangle(dsp, win, gc, x, y, width, height);
+			XFillRectangle(display, win, gc, x, y, width, height);
 		};
 		
 		inline void line_style(int line_width, int line_style = LineSolid, int cap_style = CapButt, int join_style = JoinBevel) {
-			XSetLineAttributes(dsp, gc, line_width, line_style, cap_style, join_style);
+			XSetLineAttributes(display, gc, line_width, line_style, cap_style, join_style);
 		};
 		
 		inline void fill_style(int style = FillSolid) {
-			XSetFillStyle(dsp, gc, style);
+			XSetFillStyle(display, gc, style);
+		};
+	
+		inline void text(int x, int y, char *string) {
+			if (!font)
+				throw std::runtime_error("font not loaded");
+			XDrawString(display, win, gc, x, y, string, strlen(string));
+		};
+		
+		inline int text_width(char *string) {
+			return XTextWidth(font, string, strlen(string));
 		};
 	};
 	
@@ -116,8 +136,8 @@ namespace spaint {
 		// Extract next event
 		void pump_event() {			
 			has_event = 0;
-			while (XPending(paint.dsp)) {
-				XNextEvent(paint.dsp, &evt);
+			while (XPending(paint.display)) {
+				XNextEvent(paint.display, &evt);
 				if (evt.type == ClientMessage) // Pump quit
 					if (evt.xclient.data.l[0] == wmDelete) {
 						state = 0;
@@ -160,26 +180,26 @@ namespace spaint {
 		
 		window() {};
 		
-		window(component* _comp, int _width, int _height, bool _background = 1) : comp(_comp), 
+		window(component* _comp, int _width, int _height, bool _background = 1, bool _font = 0) : comp(_comp), 
 																					width(_width), 
 																					height(_height), 
 																					background(_background) {
 			if (comp == nullptr)
-				throw "component is null";
+				throw std::runtime_error("component is null");
 							
 			comp->win = this;
 																						
-			paint.dsp = XOpenDisplay(nullptr);
-			if(!paint.dsp) 
-				throw "failed open display"; 
+			paint.display = XOpenDisplay(nullptr);
+			if(!paint.display) 
+				throw std::runtime_error("failed open display"); 
 
-			screen = DefaultScreen(paint.dsp);
-			white = WhitePixel(paint.dsp, screen);
-			black = BlackPixel(paint.dsp, screen);
+			screen = DefaultScreen(paint.display);
+			white = WhitePixel(paint.display, screen);
+			black = BlackPixel(paint.display, screen);
 
 
 			// Create window
-			paint.win = XCreateSimpleWindow(paint.dsp, DefaultRootWindow(paint.dsp),
+			paint.win = XCreateSimpleWindow(paint.display, DefaultRootWindow(paint.display),
 										0, 0, 
 										width, height, // size
 										0, black,      // border width/clr
@@ -187,43 +207,50 @@ namespace spaint {
 
 
 			// Window close event
-			wmDelete = XInternAtom(paint.dsp, "WM_DELETE_WINDOW", true);
-			XSetWMProtocols(paint.dsp, paint.win, &wmDelete, 1);
+			wmDelete = XInternAtom(paint.display, "WM_DELETE_WINDOW", true);
+			XSetWMProtocols(paint.display, paint.win, &wmDelete, 1);
 			
 			
 			// Create GC
 			unsigned long valuemask = 0;
 			
-			paint.gc = XCreateGC(paint.dsp, paint.win, valuemask, &paint.values);
+			paint.gc = XCreateGC(paint.display, paint.win, valuemask, &paint.values);
 			if (paint.gc < 0)
-				throw "failed create GC";
+				throw std::runtime_error("failed create GC");
 			
 			// Allocate foreground and background colors for this GC
 			if (!_background) {
-				XSetForeground(paint.dsp, paint.gc, WhitePixel(paint.dsp, screen));
-				XSetBackground(paint.dsp, paint.gc, BlackPixel(paint.dsp, screen));
+				XSetForeground(paint.display, paint.gc, WhitePixel(paint.display, screen));
+				XSetBackground(paint.display, paint.gc, BlackPixel(paint.display, screen));
 			} else {
-				XSetForeground(paint.dsp, paint.gc, BlackPixel(paint.dsp, screen));
-				XSetBackground(paint.dsp, paint.gc, WhitePixel(paint.dsp, screen));
+				XSetForeground(paint.display, paint.gc, BlackPixel(paint.display, screen));
+				XSetBackground(paint.display, paint.gc, WhitePixel(paint.display, screen));
 			}
 			
-			XSync(paint.dsp, false);
+			XSync(paint.display, false);
+			
+			
+			// Set up font
+			if (_font) {
+				paint.font = XLoadQueryFont (paint.display, "fixed");
+				XSetFont(paint.display, paint.gc, paint.font->fid);
+			}
 			
 			
 			// Create colormap
-			paint.cmap = DefaultColormap(paint.dsp, screen);
+			paint.cmap = DefaultColormap(paint.display, screen);
 			
 
 			// Input
 			long eventMask = StructureNotifyMask;
 			eventMask |= ButtonPressMask | ButtonReleaseMask // Mouse
 			           | KeyPressMask      | KeyReleaseMask;
-			XSelectInput(paint.dsp, paint.win, eventMask);
+			XSelectInput(paint.display, paint.win, eventMask);
 			
 			
 			// Show window
-			XMapWindow(paint.dsp, paint.win);
-			XFlush(paint.dsp);
+			XMapWindow(paint.display, paint.win);
+			XFlush(paint.display);
 			
 			comp->create();
 		};
@@ -245,6 +272,10 @@ namespace spaint {
 			// Pass pointer to new window on assignment
 			if (this->comp)
 				this->comp->win = this;
+		};
+		
+		inline void set_title(char* title) {
+			XStoreName(paint.display, paint.win, title);
 		};
 		
 		inline painter& get_paint() {
@@ -424,10 +455,14 @@ namespace spaint {
 			int win_x, win_y, root_x, root_y = 0;
 			unsigned int mask = 0;
 			Window child_win, root_win;
-			XQueryPointer(paint.dsp, paint.win,
+			XQueryPointer(paint.display, paint.win,
 							&child_win, &root_win,
 							&root_x, &root_y, &win_x, &win_y, &mask);
 			return pointer(win_x, win_y, root_x, root_y);
 		};
+	};
+	
+	painter& component::get_paint() {
+		return win->paint;
 	};
 };
