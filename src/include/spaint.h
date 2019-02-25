@@ -300,7 +300,10 @@ namespace spaint {
 			while (check_event()) get_event();
 		};
 		
-		// Event handling
+		
+		// E V E N T _ H A D N L I N G
+		
+		// Scrolling
 		int get_scroll() { 
 			if (evt.type == ButtonPress || evt.type == ButtonRelease)
 				if (evt.xbutton.button == Button4)
@@ -332,6 +335,8 @@ namespace spaint {
 			return 0;
 		};
 	
+	
+		// Mouse buttons
 		bool has_mouse_event(bool ignore_other = 1) {
 			while (check_event()) {
 				if ((evt.type == ButtonPress || evt.type == ButtonRelease) && !(evt.xbutton.button == Button4 || evt.xbutton.button == Button5)) {
@@ -360,14 +365,18 @@ namespace spaint {
 		int get_button_down() {
 			if (evt.type == ButtonPress)
 				return evt.xbutton.button;
+			return -1;
 		};
 		
 		// Returns number of released button
 		int get_button_up() {
 			if (evt.type == ButtonRelease)
 				return evt.xbutton.button;
+			return -1;
 		};
 	
+	
+		// Keyboard keys
 		bool has_key_event(bool ignore_other = 1) {
 			while (check_event()) {
 				if (evt.type == KeyPress || evt.type == KeyRelease) {
@@ -384,14 +393,18 @@ namespace spaint {
 		int get_key_down() {
 			if (evt.type == KeyPress)
 				return evt.xkey.keycode;
+			return -1;
 		};
 		
 		// Returns number of released key
 		int get_key_up() {
 			if (evt.type == KeyRelease)
 				return evt.xkey.keycode;
+			return -1;
 		};
 	
+	
+		// Getting mouse & window coordinates
 		// Result of get_pointer
 		struct pointer {
 			// pointer relative location
