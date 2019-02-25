@@ -327,12 +327,14 @@ namespace spaint {
 			return height;
 		};
 		
+		
+		// E V E N T _ H A D N L I N G
+		
+		
 		inline void clear_events() {
 			while (check_event()) get_event();
 		};
 		
-		
-		// E V E N T _ H A D N L I N G
 		
 		// Scrolling
 		int get_scroll() { 
