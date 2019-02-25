@@ -20,7 +20,7 @@
 */
 
 // Example directory
-#include "../include/spaint.h"
+#include "include/spaint.h"
 
 #include <unistd.h>
 #include <iostream>
@@ -48,8 +48,8 @@ class scene : public spaint::component {
 	int prev_x = -1, prev_y = -1;
 	int stroke_size = 1;
 	void loop() {
-		painter::window& w = get_window();
-		spaint::spaint& p = w.get_paint();
+		spaint::window& w = get_window();
+		spaint::painter& p = w.get_paint();
 		
 		// Check for key
 		if (w.has_key_event(0)) 
