@@ -25,8 +25,7 @@
 #include <functional>
 #include <cstring>
 #include <exception>
-#include <iostream>
-using namespace std;
+
 // Require $(pkg-config --cflags --libs x11) linking
 
 // Simple paint
