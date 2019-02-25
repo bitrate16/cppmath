@@ -34,6 +34,7 @@ class scene : public component {
 	
 	void create() {
 		get_paint().init_font();
+		get_window().set_title("Right turn example");
 	};
 	
 	bool mouse_down = 0;
