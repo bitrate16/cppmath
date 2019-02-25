@@ -50,7 +50,7 @@ class scene : public component {
 		painter& p = w.get_paint();
 		
 		// Block untill event is reached
-		if (!mouse_down) w.wait_event();
+		if (!mouse_down) w.wait_event(1);
 		
 		if (w.has_key_event(0))
 			if (w.get_key_down() == KEY_ESCAPE)

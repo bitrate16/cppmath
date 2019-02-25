@@ -25,7 +25,8 @@
 #include <functional>
 #include <cstring>
 #include <exception>
-
+#include <iostream>
+using namespace std;
 // Require $(pkg-config --cflags --libs x11) linking
 
 // Simple paint
@@ -141,7 +142,7 @@ namespace spaint {
 		bool has_event = 0;
 		
 		// Extract next event
-		void pump_event(bool wait_for = 0) {			
+		void pump_event(bool wait_for = 0, bool host_events = 0) {	
 			has_event = 0;
 			while (wait_for || XPending(paint.display)) {
 				XNextEvent(paint.display, &evt);
@@ -157,6 +158,10 @@ namespace spaint {
 						
 						if (comp)
 							comp->resize();
+						
+						if (host_events)
+							return;
+						
 						continue;
 					}
 					
@@ -339,11 +344,13 @@ namespace spaint {
 			while (check_event()) get_event();
 		};
 		
-		inline void wait_event() {
+		inline void wait_event(bool host_events = 0) {
+			// host_events ~ unblock when host event gor reached
+			// aka unblock on resize/quit
 			if (check_event())
 				return;
 			
-			pump_event(1);
+			pump_event(1, host_events);
 		};
 		
 		// Scrolling
