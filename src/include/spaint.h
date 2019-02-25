@@ -118,13 +118,13 @@ namespace spaint {
 			XSetFillStyle(display, gc, style);
 		};
 	
-		inline void text(int x, int y, char *string) {
+		inline void text(int x, int y, const char *string) {
 			if (!font)
 				throw std::runtime_error("font not loaded");
 			XDrawString(display, win, gc, x, y, string, strlen(string));
 		};
 		
-		inline int text_width(char *string) {
+		inline int text_width(const char *string) {
 			return XTextWidth(font, string, strlen(string));
 		};
 	};
