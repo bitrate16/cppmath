@@ -1,5 +1,5 @@
 /*
-    Example shows use of spaint and cppmath::math.right_turn
+    Example shows use of spaint and cppmath::math::right_turn
 	
 	cpp math utilities
     Copyright (C) 2019-3041  bitrate16
