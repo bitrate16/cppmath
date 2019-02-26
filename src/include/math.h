@@ -97,7 +97,6 @@ namespace cppmath {
 		};
 		
 		LINE2_ARRANGEMENT arrangement(vec2 A, vec2 B, vec2 C, vec2 D) {
-			cout << "A = " << A << ", B = " << B << ", C = " << C << ", D = " << D << endl;
 			if (A == B || C == D)
 				return UNDEFINED;
 			
@@ -114,7 +113,7 @@ namespace cppmath {
 			double Dx = s13 * s22 - s12 * s23;
 			double Dy = s11 * s23 - s13 * s21;
 				
-			cout << "Dt = " << Dt << ", Dx = " << Dx << ", Dy = " << Dy << endl;
+			// cout << "Dt = " << Dt << ", Dx = " << Dx << ", Dy = " << Dy << endl;
 			
 			if (Dt == 0) { // Parallel { 4, 5, 6, 7, 8 }
 				if (Dx != 0 || Dy != 0) // Parallel no intersection { 4 }
@@ -128,7 +127,7 @@ namespace cppmath {
 				double Pc = s13;
 				double Pd = s14;
 				
-				cout << "Pc = " << Pc << ", Pd = " << Pd << endl;
+				// cout << "Pc = " << Pc << ", Pd = " << Pd << endl;
 				
 				// A and B on CD
 				// double Pa = s15 / s16;
@@ -150,17 +149,18 @@ namespace cppmath {
 					return NOINTERSECT_STRAIGHT;
 			}
 			
-			if (in_abs_interval(Dx, Dt))
+			// cout << "in_abs_interval(Dx, Dt) = " << in_abs_interval(Dx, Dt) << endl;
+			if (in_interval(Dx, Dt))
 				if (Dy == 0 || Dy == Dt) // Overlap single node { 2 }
 					return INTERSECT_NODE;
-				else if (in_abs_interval(Dy, Dt)) // Intersection { 1 }
+				else if (in_interval(Dy, Dt)) // Intersection { 1 }
 					return INTERSECT_NORMAL;
 				else // No intersection { 0 }
 					return NOINTERSECT_UNPARALLEL;
-			else if (in_abs_interval(Dy, Dt))
+			else if (in_interval(Dy, Dt))
 				if (Dx == 0 || Dx == Dt) // Overlap single node { 2 }
 					return INTERSECT_NODE;
-				else if (in_abs_interval(Dx, Dt)) // Intersection { 1 }
+				else if (in_interval(Dx, Dt)) // Intersection { 1 }
 					return INTERSECT_NORMAL;
 				else // No intersection { 0 }
 					return NOINTERSECT_UNPARALLEL;
