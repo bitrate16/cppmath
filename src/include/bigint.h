@@ -713,6 +713,11 @@ namespace big_number {
 			return n;
 		}
 		
+		bigint& operator+=(const bigint& b) {
+			sum(b);
+			return *this;
+		};
+		
 		
 		void sub(const bigint &b) {
 			if (sign != b.sign) {
@@ -749,6 +754,11 @@ namespace big_number {
 			bigint n = l;
 			n.sub(b);
 			return n;
+		};
+		
+		bigint& operator-=(const bigint& b) {
+			sub(b);
+			return *this;
 		};
 		
 		
@@ -790,6 +800,11 @@ namespace big_number {
 			n.mul(b);
 			
 			return n;
+		};
+		
+		bigint& operator*=(const bigint& b) {
+			mul(b);
+			return *this;
 		};
 		
 		
@@ -858,6 +873,11 @@ namespace big_number {
 			return n;
 		}
 		
+		bigint& operator/=(const bigint& b) {
+			div(b);
+			return *this;
+		};
+		
 		
 		void abs_mod(const bigint &d) {
 			if (d.is_zero())
@@ -905,6 +925,11 @@ namespace big_number {
 			n.abs_mod(b);
 			return n;
 		}
+		
+		bigint& operator%=(const bigint& b) {
+			abs_mod(b);
+			return *this;
+		};
 		
 		
 		/* Complete full division. quotient is put into divident */
@@ -963,6 +988,21 @@ namespace big_number {
 			divident.calc_len();
 		};
 		
+		
+		static bigint gcd(const bigint& p, const bigint& q) {
+			bigint a = p;
+			bigint b = q;
+			bigint c = 0;
+			
+			while (b) {
+				c = a % b;
+				a = b;
+				b = c;
+			}
+			
+			a.sign = 0;
+			return a;
+		};
 		
 		bigint operator-() {
 			bigint n = *this;
@@ -1213,14 +1253,15 @@ namespace big_number {
 		};
 		
 		
-		bigint operator&(const bigint &b) const {
-			bigint n;
-			
+		void band(const bigint& b) {
 			int dis = len < b.len ? b.len : len;
 			for (int i = 0; i < dis; ++i)
-				n.set_byte(i, get_byte(i) & b.get_byte(i));
-			
-			n.calc_len();
+				set_byte(i, get_byte(i) & b.get_byte(i));
+		};
+		
+		bigint operator&(const bigint &b) const {
+			bigint n = *this;
+			n.band(b);
 			return n;
 		};
 		
@@ -1228,20 +1269,31 @@ namespace big_number {
 			return b & l;
 		};
 		
+		bigint& operator&=(const bigint& b) {
+			band(b);
+			return *this;
+		};
 		
-		bigint operator|(const bigint &b) const {
-			bigint n;
-			
+		
+		void bor(const bigint& b) {
 			int dis = len < b.len ? b.len : len;
 			for (int i = 0; i < dis; ++i)
-				n.set_byte(i, get_byte(i) | b.get_byte(i));
-			
-			n.calc_len();
+				set_byte(i, get_byte(i) | b.get_byte(i));
+		};
+		
+		bigint operator|(const bigint &b) const {
+			bigint n = *this;
+			n.band(b);
 			return n;
 		};
 		
 		friend bigint operator|(long long l, const bigint &b) {
 			return b | l;
+		};
+		
+		bigint& operator|=(const bigint& b) {
+			bor(b);
+			return *this;
 		};
 		
 		
@@ -1316,6 +1368,11 @@ namespace big_number {
 			return n;
 		};
 		
+		bigint& operator<<=(const bigint& b) {
+			shl(b.int_value());
+			return *this;
+		};
+		
 		
 		void shr(unsigned int n) {
 			if (n == 0)
@@ -1374,6 +1431,11 @@ namespace big_number {
 			bigint n = l;
 			n.shr(b.int_value());
 			return n;
+		};
+		
+		bigint& operator>>=(const bigint& b) {
+			shr(b.int_value());
+			return *this;
 		};
 		
 		
