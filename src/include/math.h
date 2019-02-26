@@ -23,7 +23,8 @@
 #include "vec2.h"
 #include "vec2.h"
 #include "interval.h"
-
+#include <iostream>
+using namespace std;
 namespace cppmath {
 	namespace math {
 		/* 
@@ -96,6 +97,7 @@ namespace cppmath {
 		};
 		
 		LINE2_ARRANGEMENT arrangement(vec2 A, vec2 B, vec2 C, vec2 D) {
+			cout << "A = " << A << ", B = " << B << ", C = " << C << ", D = " << D << endl;
 			if (A == B || C == D)
 				return UNDEFINED;
 			
@@ -111,6 +113,8 @@ namespace cppmath {
 			
 			double Dx = s13 * s22 - s12 * s23;
 			double Dy = s11 * s23 - s13 * s21;
+				
+			cout << "Dt = " << Dt << ", Dx = " << Dx << ", Dy = " << Dy << endl;
 			
 			if (Dt == 0) { // Parallel { 4, 5, 6, 7, 8 }
 				if (Dx != 0 || Dy != 0) // Parallel no intersection { 4 }
@@ -123,6 +127,8 @@ namespace cppmath {
 				// C and D on AB
 				double Pc = s13;
 				double Pd = s14;
+				
+				cout << "Pc = " << Pc << ", Pd = " << Pd << endl;
 				
 				// A and B on CD
 				// double Pa = s15 / s16;

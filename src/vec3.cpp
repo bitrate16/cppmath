@@ -99,12 +99,12 @@ vec3 cppmath::operator-(const vec3 &v1, const vec3 &v2) {
 
 /* Compare equals */
 bool cppmath::operator==(const vec3 &v1, const vec3 &v2) {
-	return v1.x == v2.y && v1.y == v2.y && v1.z == v2.z;
+	return v1.x == v2.x && v1.y == v2.y && v1.z == v2.z;
 }
 
 /* Compare not equals */
 bool cppmath::operator!=(const vec3 &v1, const vec3 &v2) {
-	return v1.x != v2.y && v1.y != v2.y && v1.z != v2.z;
+	return v1.x != v2.x && v1.y != v2.y && v1.z != v2.z;
 }
 
 
