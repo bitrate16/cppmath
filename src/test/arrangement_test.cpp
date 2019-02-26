@@ -8,7 +8,7 @@
 using namespace std;
 using namespace cppmath;
 
-// clear && gcc -std=c++11 -w -g vec2.cpp vec3.cpp arrangement_test.cpp -lstdc++ -lm -o arrangement_test && cat test_arrange.txt | ./arrangement_test
+// clear && gcc -std=c++11 -w -g vec2.cpp vec3.cpp arrangement_test.cpp -lstdc++ -lm -o arrangement_test && cat test_arrangement.txt | ./arrangement_test
 
 int main(int argc, char **argv) {
 	while (cin) {		
