@@ -22,6 +22,7 @@
 
 #include <cmath>
 #include <iostream>
+#inclide <exception>
 
 #ifdef _WIN32
 	#include <float.h>
@@ -137,7 +138,7 @@ namespace cppmath {
 		
 		interval& operator/=(const interval& i) {
 			if (i.a <= 0.0 && 0.0 <= i.b)
-				throw "interval division by zero";
+				throw std::runtime_error("interval division by zero");
 			
 			if (this == &i) 
 				a = b = 1.0;

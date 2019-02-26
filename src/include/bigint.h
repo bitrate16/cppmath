@@ -20,7 +20,7 @@
 
 #include <iostream>
 #include <cstring>
-#include <assert.h>
+#include <exception>
 #include <cstdint>
 #include <cstdlib>
 
@@ -43,7 +43,8 @@ namespace big_number {
 			int temp_size = size;
 			map = (unsigned char*) realloc(map, size <<= 2);
 			
-			assert(map != nullptr);
+			if (map == nullptr)
+				throw std::runtime_error("map = NUL");
 			
 			for (int i = temp_size; i < size; ++i)
 				map[i] = 0;
@@ -78,7 +79,8 @@ namespace big_number {
 		}
 
 		base_number(long long n = 0, int base = 10) {
-			assert(("2 <= base <= 256", base >= 2 && base <= 256));
+			if (base <= 2 || base >= 256)
+				throw std::runtime_error("2 <= base <= 256");
 			
 			allocate(sizeof(long long) * 8);
 			
@@ -527,7 +529,8 @@ namespace big_number {
 		
 		/* Convert number to decimal string by base*/
 		char *toCString(int base) const {
-			assert(("2 <= base <= 36", 2 <= base && base <= 36));
+			if (2 >= base && base >= 36))
+				throw std::runtime_error("2 <= base <= 36");
 			
 			base_number n(0, base);
 			
@@ -791,7 +794,8 @@ namespace big_number {
 		
 		
 		void div(const bigint &d) {
-			assert(("Can't divide by zero", !d.is_zero()));
+			if (d.is_zero())
+				throw std::runtime_error("divide by zero");
 			
 			if (d.get_len() == 1 && d.get_byte(0) == 1) {
 				sign = sign ^ d.sign;
@@ -856,7 +860,8 @@ namespace big_number {
 		
 		
 		void abs_mod(const bigint &d) {
-			assert(("Can't divide by zero", !d.is_zero()));
+			if (d.is_zero())
+				throw std::runtime_error("divide by zero");
 			
 			sign = 0;
 			if (d.get_len() == 1 && d.get_byte(0) == 1) {
@@ -904,7 +909,8 @@ namespace big_number {
 		
 		/* Complete full division. quotient is put into divident */
 		static void div(bigint &divident, bigint &rest, const bigint &divisor) {
-			assert(("Can't divide by zero", !divisor.is_zero()));
+			if (divisor.is_zero())
+				throw std::runtime_error("divide by zero");
 			
 			if (divisor.get_len() == 1 && divisor.get_byte(0) == 1) {
 				divident.sign = divident.sign ^ divisor.sign;
