@@ -49,13 +49,14 @@ public:
 		bigint gcd = bigint::gcd(p, q);
 		
 		if (gcd > 1) {
-			p = p / gcd;
-			q = q / gcd;
+			p /= gcd;
+			q /= gcd;
 		}
 		
 		bigint res = p, rest;
 		bigint::div(res, rest, q);
 		
-		
+		p = rest;
+		w += res;
 	};
 };
