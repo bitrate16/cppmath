@@ -628,6 +628,11 @@ namespace big_number {
 			sign = s;
 		};
 		
+		/* Returns sign. 0 = positive, 1 = negative */
+		inline bool get_sign()) {
+			return sign;
+		};
+		
 		/* Set number to zero */
 		inline void set_zero() {
 			for (int i = 0; i < len; ++i)

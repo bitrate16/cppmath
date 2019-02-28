@@ -22,7 +22,7 @@
 
 #include <cmath>
 #include <iostream>
-#inclide <exception>
+#include <exception>
 
 #ifdef _WIN32
 	#include <float.h>
