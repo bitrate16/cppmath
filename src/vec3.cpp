@@ -18,8 +18,11 @@
 
 #include <cmath>
 
-#include "include/vec3.h"
-#include "include/vec3.h"
+#include <iostream>
+#include <stdexcept>
+
+#include "vec3.h"
+#include "vec3.h"
 
 using namespace cppmath;
 

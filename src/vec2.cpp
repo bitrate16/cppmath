@@ -19,9 +19,10 @@
 #include <cmath>
 
 #include <iostream>
+#include <stdexcept>
 
-#include "include/vec2.h"
-#include "include/vec3.h"
+#include "vec2.h"
+#include "vec3.h"
 
 using namespace cppmath;
 
