@@ -67,11 +67,11 @@ inline double t_a() { return 0.0; }
 
 inline double t_b() { return 1.0; }
 
-inline double t_d() { return 0.0000001; }
+inline double t_d() { return 0.00001; }
 
 vec2 curve(double t) {
 	t *= 100.0;
-	return vec2(t*(0.5 + 0.5 * std::sin(t))*std::tan(t), t+t*(0.5+cos(t)*0.5));
+	return vec2(t * 4.0, 100.0 * (0.5+cos(t)*0.5));
 };
 
 // rendering
@@ -87,6 +87,7 @@ class scene : public component {
 	int last_turn = 2;
 	int last_x = -1, last_y = -1;
 	bool resized = 1;
+	double t_local = 0;
 	
 	void resize() {
 		resized = 1;
@@ -97,7 +98,7 @@ class scene : public component {
 		painter& p = w.get_paint();
 		
 		// Block untill event is reached
-		if (!mouse_down) w.wait_event(1);
+		// if (!mouse_down) w.wait_event(1);
 		
 		if (w.has_key_event(0))
 			if (w.get_key_down() == KEY_ESCAPE)
@@ -113,6 +114,7 @@ class scene : public component {
 			
 		if (mouse_down || resized) {
 			window::pointer point = w.get_pointer();			
+			p.clear();
 			
 			if (last_x != -1) {
 				p.color(0, 0, 0);
@@ -125,6 +127,7 @@ class scene : public component {
 			
 			p.color(155, 0, 0);
 			double t = t_a();
+			t_local = 0;
 			
 			for (; t < t_b(); t += t_d()) {
 				ivec2 v(curve(t));
@@ -132,6 +135,15 @@ class scene : public component {
 			}
 			
 			resized = 0;
+		} else {
+			t_local += t_d();
+			ivec2 v(curve(t_local));
+			
+			p.color(0, 0, 255);
+			p.arc(v.x-2, v.y-2, 4, 4);
+			
+			if (t_local > t_b())
+				t_local = 0;
 		}
 	};
 };
