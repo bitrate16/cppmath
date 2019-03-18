@@ -60,22 +60,22 @@ namespace cppmath {
 		// [[ M U L T I P L I C A T I O N S ]]
 		
 		/* Multiply components */
-		inline vec3 &mul(const vec3 &v);
+		vec3 &mul(const vec3 &v);
 		
 		/* Scalar product */
-		inline double smul(const vec3 &v);
+		double smul(const vec3 &v);
 		
 		/* Vector product */
-		inline vec3 vmul(const vec3 &v);
+		vec3 vmul(const vec3 &v);
 		
 		
 		// [[ M A T H ]]
 		
-		inline double len();
+		double len();
 		
-		inline double len2();
+		double len2();
 		
-		inline double inv();
+		double inv();
 		
 		/* Normalize the vector */
 		vec3 operator~();
