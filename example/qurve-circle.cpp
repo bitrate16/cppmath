@@ -30,7 +30,7 @@ using namespace cppmath;
 
 // Right turn visualisation using spaint tool.
 
-// bash c.sh "-lX11" right_turn
+// bash c.sh "-lX11" example/qurve-circle
 
 // integer coord cast
 
@@ -80,7 +80,7 @@ class scene : public component {
 	
 	void create() {
 		get_paint().init_font();
-		get_window().set_title("Right turn example");
+		get_window().set_title("Curve draw example");
 	};
 	
 	bool mouse_down = 0;

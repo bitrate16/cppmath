@@ -23,8 +23,7 @@
 #include "vec2.h"
 #include "vec2.h"
 #include "interval.h"
-#include <iostream>
-using namespace std;
+
 namespace cppmath {
 	namespace math {
 		/* 
@@ -96,7 +95,7 @@ namespace cppmath {
 			return 0 < x && x < b || 0 < (x = -x) && x < -b;
 		};
 		
-		LINE2_ARRANGEMENT arrangement(vec2 A, vec2 B, vec2 C, vec2 D) {
+		LINE2_ARRANGEMENT arrangement(const vec2& A, const vec2& B, const vec2& C, const vec2& D) {
 			if (A == B || C == D)
 				return UNDEFINED;
 			
@@ -172,6 +171,12 @@ namespace cppmath {
 			return UNDEFINED;
 		};
 	
+		inline bool intersects(const vec2& A, const vec2& B, const vec2& C, const vec2& D) {
+			LINE2_ARRANGEMENT a = arrangement(A, B, C, D);
+			
+			return a == INTERSECT_NORMAL || a == INTERSECT_NODE || a == MATCH_NODES || a == OVERLAP_STRAIGHT_CONTAIN || a == OVERLAP_STRAIGHT || a == STRAIGHT_NODE;
+		};
+	
 		/*
 		 *
 		 *                B
@@ -193,7 +198,7 @@ namespace cppmath {
 			RT_RIGHT     =  1
 		};
 		
-		RIGHT_TURN2 right_turn(vec2 x, vec2 A, vec2 B) {
+		RIGHT_TURN2 right_turn(const vec2& x, const vec2& A, const vec2& B) {
 			double p = (B.x - A.x) * (x.y - A.y);
 			double q = (x.x - A.x) * (B.y - A.y);
 			
@@ -221,6 +226,32 @@ namespace cppmath {
 			
 			// Assume no more precision
 			return RT_COLLINEAR;
+		};
+	
+		// Check if point is inside the triangle using right turn predicate
+		inline bool in_triangle(const vec2& x, const vec2& a, const vec2& b, const vec2& c) {
+			//                 B #                                                                       
+			//                  /\                                                                       
+			//                 /  \                                                                      
+			//                /    \          * P          but align(P) != align(A)                      
+			//               /      \                                                                    
+			//              /        \                                                                   
+			//             /     * T  \              for i=1..3 :: align(T) == align(Vert[i]) => inside       
+			//          A #-_          \                                                                 
+			//               --_        \                                                                
+			//                  --_      \                                                               
+			//                     --_    \                                                              
+			//                        --_  \                                                             
+			//                           --_\                                                            
+			//                              # C                                                          
+			//                                                                                           
+			
+			return 
+					right_turn(x, a, b) == right_turn(c, a, b)
+					&&
+					right_turn(x, c, a) == right_turn(b, c, a)
+					&&
+					right_turn(x, b, c) == right_turn(a, b, c);
 		};
 	};
 };

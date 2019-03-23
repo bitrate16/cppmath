@@ -31,6 +31,32 @@
 // Simple paint
 namespace spaint {
 	
+	// Used as wrapper for XPoint
+	struct Point {
+		int x = 0;
+		int y = 0;
+		
+		Point(int x, int y) {
+			this->x = x;
+			this->y = y;
+		};
+		
+		Point(int r) {
+			x = y = r;
+		};
+		
+		Point() {
+			x = y = 0;
+		};
+		
+		operator XPoint() const {
+			XPoint p;
+			p.x = x;
+			p.y = y;
+			return p;
+		};
+	};
+	
 	// Scene wrapper
 	class window;
 	class painter;
@@ -129,6 +155,11 @@ namespace spaint {
 			if (!font)
 				throw std::runtime_error("font not loaded");
 			XDrawString(display, win, gc, x, y, string, strlen(string));
+		};
+		
+		// See: https://tronche.com/gui/x/xlib/graphics/filling-areas/XFillPolygon.html
+		inline void fill_poly(XPoint *points, int n, int shape = Complex, int mode = CoordModeOrigin) {
+			XFillPolygon(display, win, gc, points, n, shape, mode);
 		};
 		
 		inline int text_width(const char *string) {
@@ -344,7 +375,7 @@ namespace spaint {
 		};
 		
 		inline void wait_event(bool host_events = 0) {
-			// host_events ~ unblock when host event gor reached
+			// host_events ~ unblock when host event got reached
 			// aka unblock on resize/quit
 			if (check_event())
 				return;

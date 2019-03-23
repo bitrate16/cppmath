@@ -99,7 +99,7 @@ bool cppmath::operator==(const vec2 &v1, const vec2 &v2) {
 
 /* Compare not equals */
 bool cppmath::operator!=(const vec2 &v1, const vec2 &v2) {
-	return v1.x != v2.x && v1.y != v2.y;
+	return v1.x != v2.x || v1.y != v2.y;
 }
 
 
