@@ -19,6 +19,7 @@
 #pragma once
 
 #include <limits>
+#include <vector>
 
 #include "vec2.h"
 #include "vec2.h"
@@ -252,6 +253,127 @@ namespace cppmath {
 					right_turn(x, c, a) == right_turn(b, c, a)
 					&&
 					right_turn(x, b, c) == right_turn(a, b, c);
+		};
+	
+		// Calculates length of a 2D curve with given amount of steps from starting point to ending.
+		double curve2_length(int steps, double start, double end, double (*function_x) (double), double (*function_y) (double)) {
+			if (steps <= 0)
+				return -1;
+			
+			if (end <= start)
+				return 0;
+			
+			double d = (end - start) / (double) steps;
+			if (d == 0)
+				return std::numeric_limits<double>::quiet_NaN();
+			
+			double total_len = 0;
+			
+			// Previous coords
+			double p_x = function_x(start);
+			double p_y = function_y(start);
+			
+			for (double t = start + d; t <= end; t += d) {
+				double x = function_x(t);
+				double y = function_y(t);
+				
+				double dx = x - p_x;
+				double dy = y - p_y;
+				
+				p_x = x;
+				p_y = y;
+				
+				total_len += std::sqrt(dx * dx + dy * dy);
+			}
+			
+			return total_len;
+		};
+		
+		// Calculates length of a vector 2D curve with given amount of steps from starting point to ending.
+		double curve2_length(int steps, double start, double end, vec2 (*function) (double)) {
+			if (steps <= 0)
+				return -1;
+			
+			if (end <= start)
+				return 0;
+			
+			double d = (end - start) / (double) steps;
+			if (d == 0)
+				return std::numeric_limits<double>::quiet_NaN();
+			
+			double total_len = 0;
+			
+			// Previous coords
+			vec2 p = function(start);
+			
+			for (double t = start + d; t <= end; t += d) {
+				vec2 v = function(t);
+				
+				double dx = v.x - p.x;
+				double dy = v.y - p.y;
+				
+				p = v;
+				
+				total_len += std::sqrt(dx * dx + dy * dy);
+			}
+			
+			return total_len;
+		};
+		
+		inline long long factorial(int n) {
+			return (n < 0) ? 0 : ((n == 1 || n == 0) ? 1 : factorial(n - 1) * n);
+		};
+		
+		// Calculate length of bezier curve with given amount of steps
+		double bezier_length(int steps, const std::vector<vec2>& points) {
+			 
+			// Bezier:
+			// B(t) = SUM [ i = 1; i <= N; P[i] * C[N, i] * t^i * (1 - t)^i ]
+			
+			// Derivative:
+			// B'(t) = SUM [ i = 1; i <= N; P[i] * C[N, i] * (i * (1 - t)^i * t^(i-1) - i * (1 - t)^(i-1) * t^i) ]
+			
+			// Length:
+			// SUM [ t = 0; t <= 1; t += 1 / steps; sqrt(B'(t).x^2 + B'(t).y^2)) ]
+			
+			
+			if (points.size() < 2)
+				return 0;
+			
+			if (steps <= 0)
+				return -1;
+			
+			double d = 1.0 / (double) steps;
+			if (d == 0)
+				return std::numeric_limits<double>::quiet_NaN();
+			
+			std::vector<vec2> const_multipliers; // [::] = P[i] * C[N, i]
+			for (int i = 0; i < points.size(); ++i) {
+				double C = (double) factorial(points.size()) / ((double) factorial(i + 1) * (double) factorial(points.size() - i - 1));
+				const_multipliers.push_back(points[i] * C);
+			}
+			
+			double curve_len = 0;
+			vec2 prev_derivative;
+			
+			for (double t = 0.0; t <= 1.0; t += d) {
+				vec2 derivative;
+				
+				for (double i = 1; i < points.size() + 1; i += 1.0) {
+					double point_derivative = i * std::pow(1 - t, i) * std::pow(t, i - 1) - i * std::pow(1 - t, i - 1) * std::pow(t, i);
+					derivative += const_multipliers[(int) i - 1] * point_derivative;
+				}
+				
+				if (t == 0.0) {
+					prev_derivative = derivative;
+					continue;
+				}
+				
+				curve_len = (derivative - prev_derivative).len();
+				prev_derivative = derivative;
+			}
+			
+			return curve_len;
 		};
 	};
 };

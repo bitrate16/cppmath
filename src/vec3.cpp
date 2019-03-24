@@ -168,22 +168,50 @@ vec3 vec3::operator~() {
 
 
 /* Vector component multiplication product */
-vec3 operator*(const vec3 &v1, const vec3 &v2) {
+vec3 cppmath::operator*(const vec3 &v1, const vec3 &v2) {
 	vec3 v(v1);
 	v.x *= v2.x;
 	v.y *= v2.y;
 	v.z *= v2.z;
 	return v;
-}
+};
 
 /* Vector component division product */
-vec3 operator/(const vec3 &v1, const vec3 &v2) {
+vec3 cppmath::operator/(const vec3 &v1, const vec3 &v2) {
 	vec3 v(v1);
 	v.x /= v2.x == 0 ? NAN : v2.x;
 	v.y /= v2.y == 0 ? NAN : v2.y;
 	v.z /= v2.z == 0 ? NAN : v2.z;
 	return v;
-}
+};
+	
+vec3& cppmath::operator+=(vec3& a, const vec3& b) {
+	a.x += b.x;
+	a.y += b.y;
+	a.z += b.z;
+	return a;
+};
+
+vec3& cppmath::operator-=(vec3& a, const vec3& b) {
+	a.x -= b.x;
+	a.y -= b.y;
+	a.z -= b.z;
+	return a;
+};
+
+vec3& cppmath::operator*=(vec3& a, const vec3& b) {
+	a.x *= b.x;
+	a.y *= b.y;
+	a.z *= b.z;
+	return a;
+};
+
+vec3& cppmath::operator/=(vec3& a, const vec3& b) {
+	a.x /= b.x == 0 ? NAN : b.x;
+	a.y /= b.y == 0 ? NAN : b.y;
+	a.y /= b.z == 0 ? NAN : b.z;
+	return a;
+};
 
 std::ostream& cppmath::operator<<(std::ostream& os, const vec3& v) {
 	os << '(' << v.x << ", " << v.y << ", " << v.z << ')';

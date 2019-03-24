@@ -158,20 +158,44 @@ vec2 vec2::operator~() {
 
 
 /* Vector component multiplication product */
-vec2 operator*(const vec2 &v1, const vec2 &v2) {
+vec2 cppmath::operator*(const vec2 &v1, const vec2 &v2) {
 	vec2 v(v1);
 	v.x *= v2.x;
 	v.y *= v2.y;
 	return v;
-}
+};
 
 /* Vector component division product */
-vec2 operator/(const vec2 &v1, const vec2 &v2) {
+vec2 cppmath::operator/(const vec2 &v1, const vec2 &v2) {
 	vec2 v(v1);
 	v.x /= v2.x == 0 ? NAN : v2.x;
 	v.y /= v2.y == 0 ? NAN : v2.y;
 	return v;
-}
+};
+	
+vec2& cppmath::operator+=(vec2& a, const vec2& b) {
+	a.x += b.x;
+	a.y += b.y;
+	return a;
+};
+
+vec2& cppmath::operator-=(vec2& a, const vec2& b) {
+	a.x -= b.x;
+	a.y -= b.y;
+	return a;
+};
+
+vec2& cppmath::operator*=(vec2& a, const vec2& b) {
+	a.x *= b.x;
+	a.y *= b.y;
+	return a;
+};
+
+vec2& cppmath::operator/=(vec2& a, const vec2& b) {
+	a.x /= b.x == 0 ? NAN : b.x;
+	a.y /= b.y == 0 ? NAN : b.y;
+	return a;
+};
 
 std::ostream& cppmath::operator<<(std::ostream& os, const vec2& v) {
 	os << '(' << v.x << ", " << v.y << ')';

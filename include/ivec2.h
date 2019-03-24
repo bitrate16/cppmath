@@ -97,4 +97,9 @@ namespace cppmath {
 	ivec2 operator-(const ivec2& a, const ivec2& b) { return ivec2(a.x - b.x, a.y - b.y); };
 	ivec2 operator*(const ivec2& a, const ivec2& b) { return ivec2(a.x * b.x, a.y * b.y); };
 	ivec2 operator/(const ivec2& a, const ivec2& b) { return ivec2(a.x / b.x, a.y / b.y); };
+	
+	ivec2& operator+=(ivec2& a, const ivec2& b) { a.x += b.x; a.y += b.y; return a; };
+	ivec2& operator-=(ivec2& a, const ivec2& b) { a.x -= b.x; a.y -= b.y; return a; };
+	ivec2& operator*=(ivec2& a, const ivec2& b) { a.x *= b.x; a.y *= b.y; return a; };
+	ivec2& operator/=(ivec2& a, const ivec2& b) { a.x /= b.x; a.y /= b.y; return a; };
 };

@@ -107,5 +107,10 @@ namespace cppmath {
 	/* Vector component division product */
 	vec2 operator/(const vec2 &v1, const vec2 &v2);
 	
+	vec2& operator+=(vec2& a, const vec2& b);
+	vec2& operator-=(vec2& a, const vec2& b);
+	vec2& operator*=(vec2& a, const vec2& b);
+	vec2& operator/=(vec2& a, const vec2& b);
+	
 	std::ostream& operator<<(std::ostream& os, const vec2& v);
 };
