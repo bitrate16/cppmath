@@ -142,7 +142,7 @@ double vec3::len() {
 }
 
 double vec3::len2() {
-	return y * y + y * y + z * z;
+	return x * x + y * y + z * z;
 }
 
 double vec3::inv() {

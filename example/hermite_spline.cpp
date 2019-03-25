@@ -22,6 +22,7 @@
 #include <vector>
 
 #include "spaint.h"
+#include "spaint_util.h"
 #include "cppmath.h"
 #include "vec2.h"
 #include "ivec2.h"
@@ -60,9 +61,20 @@ class scene : public component {
 	};
 	
 	vector<vec2> points;
+	vector<vec2> derivatives;
 	
-	bool mouse_down = 0;
 	ivec2 last_pointer;
+	
+	// Points drag
+	bool mouse1_down = 0;
+	bool drag1_mode = 0;
+	int  drag1_id = 0;
+	
+	// Points derivative
+	bool mouse2_down = 0;
+	bool drag2_mode = 0;
+	int  drag2_id = 0;
+	
 	bool resized = 1;
 	bool updated = 0;
 	
@@ -75,7 +87,7 @@ class scene : public component {
 		painter& p = w.get_paint();
 		
 		// Block untill event is reached
-		if (!mouse_down) w.wait_event(1);
+		if (!mouse1_down && !mouse2_down) w.wait_event(1);
 		
 		if (w.has_key_event(0)) 
 			if (w.get_key_down() == KEY_ESCAPE)
@@ -87,21 +99,82 @@ class scene : public component {
 		
 		if (w.has_mouse_event(0)) 
 			if (w.get_button_down() == Button1) 
-				mouse_down = 1;
-			else if (w.get_button_up() == Button1) 
-				mouse_down = 0;
+				mouse1_down = 1;
+			else if (w.get_button_up() == Button1) {
+				mouse1_down = 0;
+				drag1_mode = 0;
+			} else if (w.get_button_down() == Button3) 
+				mouse2_down = 1;
+			else if (w.get_button_up() == Button3) {
+				mouse2_down = 0;
+				drag2_mode = 0;
+			}
 			
 		w.clear_events();
-			
-		if (mouse_down) {
-			// XXX: Move points.
-			// XXX: edit derivatives
-                        // XXX: ceate function for rendering in namespace
+		
+		// Left button operations
+		if (!drag1_mode && mouse1_down) {
 
 			window::pointer point = w.get_pointer();
+			vec2 mp(point.x, point.y);
+			
+			// Match dragged point
+			for (int i = 0; i < points.size(); ++i) 
+				if ((points[i] - mp).len2() < 100) {
+					drag1_mode = 1;
+					drag1_id = i;
+					return;
+				}
+			
+			// Else add point
 			points.push_back(vec2(point.x, point.y));
 			
-			mouse_down = 0;
+			derivatives.clear();
+			for (int i = 0; i < points.size(); ++i) {
+				vec2 ptan;
+				
+				if (i == 0) 
+					ptan = points[1] - points[0];
+				else if (i == points.size() - 1)
+					ptan = points[i] - points[i - 1];
+				else
+					ptan = (points[i + 1] - points[i - 1]) / 2.0;
+					
+				derivatives.push_back(ptan);
+			}
+			
+			mouse1_down = 0;
+			updated = 1;
+		} else if (drag1_mode) {
+			// Move selected point
+			window::pointer point = w.get_pointer();
+			points[drag1_id].x = point.x;
+			points[drag1_id].y = point.y;
+			
+			updated = 1;
+		}
+		
+		// Right button operations
+		if (!drag2_mode && mouse2_down) {
+
+			window::pointer point = w.get_pointer();
+			vec2 mp(point.x, point.y);
+			
+			// Match dragged point
+			for (int i = 0; i < points.size(); ++i) 
+				if ((points[i] - mp).len2() < 100) {
+					drag2_mode = 1;
+					drag2_id = i;
+					return;
+				}
+			
+			mouse2_down = 0;
+		} else if (drag2_mode) {
+			// Change derivative of point
+			window::pointer point = w.get_pointer();
+			vec2 deriv = vec2(point.x, point.y) - points[drag2_id];
+			derivatives[drag2_id] = deriv;
+			
 			updated = 1;
 		}
 			
@@ -120,47 +193,18 @@ class scene : public component {
 				p.color(255, 0, 0);
 				
 				const int CURVE_STEPS = 1000;
-				double d = 1.0 / (double) CURVE_STEPS;
 				
-				auto P = [](double t, double p0, double p1, double m0, double m1) -> double { 
-					double t2 = t * t;
-					double t3 = t2 * t;
-					return  (2.0 * t3 - 3.0 * t2 + 1.0) * p0
-							+
-							(t3 - 2.0 * t2 + t) * m0
-							+
-							(-2.0 * t3 + 3.0 * t2) * p1
-							+
-							(t3 - t2) * m1;
-				};
-				
-				vector<vec2> derivatives;
-				for (int i = 0; i < points.size(); ++i) {
-					vec2 ptan;
-					
-					if (i == 0) 
-						ptan = points[1] - points[0];
-					else if (i == points.size() - 1)
-						ptan = points[i] - points[i - 1];
-					else
-						ptan = (points[i + 1] - points[i - 1]) / 2.0;
-						
-					derivatives.push_back(ptan);
-				}
-				
-				for (int i = 0; i < points.size() - 1; ++i) {
-					for (double t = 0.0; t <= 1.0; t += d) {
-						double x = P(t, points[i].x, points[i + 1].x, derivatives[i].x, derivatives[i + 1].x);
-						double y = P(t, points[i].y, points[i + 1].y, derivatives[i].y, derivatives[i + 1].y);
-						
-						p.point(x, y);
-					}
-				}
+				hermite_spline(p, points, derivatives, CURVE_STEPS);
 			
 				p.color(0, 0, 255);
 				
 				for (int i = 0; i < points.size() - 1; ++i) 
 					p.line(points[i].x, points[i].y, points[i + 1].x, points[i + 1].y);	
+				
+				p.color(0, 255, 255);
+				for (int i = 0; i < points.size(); ++i) 
+					p.arc(points[i].x-10, points[i].y-10, 20, 20);
+				
 			}
 			
 			p.color(0, 255, 255);

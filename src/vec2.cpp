@@ -133,7 +133,7 @@ double vec2::len() {
 }
 
 double vec2::len2() {
-	return y * y + y * y;
+	return x * x + y * y;
 }
 
 double vec2::inv() {
