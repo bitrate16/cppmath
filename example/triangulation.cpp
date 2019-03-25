@@ -257,8 +257,8 @@ class scene : public component {
 				}
 				
 				// this shit should run forever :D
-				if (in_triangle(point))
-					continue;
+				// if (in_triangle(point))
+				// 	continue;
 				
 				// Distance to closes node >= 16px
 				if (!closest_distance_check(point))
