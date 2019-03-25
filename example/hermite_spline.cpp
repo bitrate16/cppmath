@@ -33,23 +33,14 @@ using namespace cppmath;
 
 #define KEY_ESCAPE  9
 #define KEY_R      27
+#define KEY_L      46
+#define KEY_C      54
+#define KEY_I      31
+#define KEY_H      43
 
 // Hermite spline by points visualisation using spaint tool.
 
 // bash c.sh "-lX11" example/hermite_spline
-
-// curve function
-
-inline double t_a() { return 0.0; }
-
-inline double t_b() { return 1.0; }
-
-inline double t_d() { return 0.00001; }
-
-vec2 curve(double t) {
-	t *= 6.28318530718;
-	return vec2(50.0) + vec2(100.0 * (0.5 + std::sin(t) * 0.5) * std::cos(t * 0.5), 100.0 * (0.5 + std::cos(t) * 0.5)).mul(1.0);
-};
 
 // rendering
 
@@ -78,6 +69,12 @@ class scene : public component {
 	bool resized = 1;
 	bool updated = 0;
 	
+	// Render options
+	bool render_lines = 1;   // L
+	bool render_hooks = 1;   // H
+	bool render_circles = 1; // C
+	bool render_indices = 1; // I
+	
 	void resize() {
 		resized = 1;
 	};
@@ -89,14 +86,26 @@ class scene : public component {
 		// Block untill event is reached
 		if (!mouse1_down && !mouse2_down) w.wait_event(1);
 		
-		if (w.has_key_event(0)) 
+		if (w.has_key_event(0))
 			if (w.get_key_down() == KEY_ESCAPE)
 				w.stop();
 			else if (w.get_key_down() == KEY_R) {
 				points.clear();
 				updated = 1;
+			} else if (w.get_key_down() == KEY_L) {
+				render_lines = !render_lines;
+				updated = 1;
+			} else if (w.get_key_down() == KEY_H) {
+				render_hooks = !render_hooks;
+				updated = 1;
+			} else if (w.get_key_down() == KEY_C) {
+				render_circles = !render_circles;
+				updated = 1;
+			} else if (w.get_key_down() == KEY_I) {
+				render_indices = !render_indices;
+				updated = 1;
 			}
-		
+			
 		if (w.has_mouse_event(0)) 
 			if (w.get_button_down() == Button1) 
 				mouse1_down = 1;
@@ -198,24 +207,41 @@ class scene : public component {
 			
 				p.color(0, 0, 255);
 				
-				for (int i = 0; i < points.size() - 1; ++i) 
-					p.line(points[i].x, points[i].y, points[i + 1].x, points[i + 1].y);	
+				// Render frame lines
+				if (render_lines)
+					for (int i = 0; i < points.size() - 1; ++i) 
+						p.line(points[i].x, points[i].y, points[i + 1].x, points[i + 1].y);	
 				
 				p.color(0, 255, 255);
-				for (int i = 0; i < points.size(); ++i) 
-					p.arc(points[i].x-10, points[i].y-10, 20, 20);
+				
+				// Render derivatives
+				if (render_hooks)
+					for (int i = 0; i < points.size(); ++i) {
+						p.line((points[i] - derivatives[i]).x, (points[i] - derivatives[i]).y, (points[i] + derivatives[i]).x, (points[i] + derivatives[i]).y);
+						p.arc((points[i] - derivatives[i]).x-2, (points[i] - derivatives[i]).y-2, 4, 4);
+						p.arc((points[i] + derivatives[i]).x-2, (points[i] + derivatives[i]).y-2, 4, 4);
+					}
+				
+				p.color(255, 0, 255);
+				
+				// Render anchor points
+				if (render_circles)
+					for (int i = 0; i < points.size(); ++i)
+						p.arc(points[i].x-10, points[i].y-10, 20, 20);
 				
 			}
 			
 			p.color(0, 255, 255);
 			
-			for (int i = 0; i < points.size(); ++i) {
-				p.color(0, 255, 255);
-				p.point(points[i].x, points[i].y);
-				p.color(255, 255, 0);
-				string ind = to_string(i);
-				p.text(points[i].x, points[i].y, ind.c_str());
-			}
+			// Render frame lines
+			if (render_indices)
+				for (int i = 0; i < points.size(); ++i) {
+					p.color(0, 255, 255);
+					p.point(points[i].x, points[i].y);
+					p.color(255, 255, 0);
+					string ind = to_string(i);
+					p.text(points[i].x, points[i].y, ind.c_str());
+				}
 			
 			resized = 0;
 			updated = 0;
