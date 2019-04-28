@@ -15,3 +15,17 @@ src/sf
 src/styled_font.cpp
 src/test.cpp
 src/test_arrangement.txt
+example/qurve-circle
+example/spaint-paint
+example/triangulation
+example/xdraw
+example/xdraw.cpp
+src/qurve-circle
+src/qurve_circle
+src/qurve_circle.cpp
+example/qurve-circle
+example/qurve-circle
+example/qurve-circle
+example/bezier_curve
+example/hermite_spline
+example/qurve-circle

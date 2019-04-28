@@ -48,7 +48,7 @@ class scene : public component {
 	
 	void create() {
 		get_paint().init_font();
-		get_window().set_title("Bezier draw example");
+		get_window().set_title("Hermite spline example");
 	};
 	
 	vector<vec2> points;
