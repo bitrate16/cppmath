@@ -29,3 +29,6 @@ example/qurve-circle
 example/bezier_curve
 example/hermite_spline
 example/qurve-circle
+example/rational_bezier
+src/transparent_window
+src/transparent_window.c

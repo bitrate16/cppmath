@@ -39,7 +39,7 @@ using namespace cppmath;
 
 // Hermite spline by points visualisation using spaint tool.
 
-// bash c.sh "-lX11" example/bezier_curve
+// bash c.sh "-lX11" example/rational_bezier
 
 // rendering
 
@@ -47,10 +47,11 @@ class scene : public component {
 	
 	void create() {
 		get_paint().init_font();
-		get_window().set_title("Bezier curve example");
+		get_window().set_title("Rational bezier example");
 	};
 	
 	vector<vec2> points;
+	vector<double> weights;
 	
 	ivec2 last_pointer;
 	
@@ -103,6 +104,21 @@ class scene : public component {
 				drag1_mode = 0;
 			}
 			
+		if (w.has_scroll_event(0)) {
+			window::pointer point = w.get_pointer();
+			vec2 mp(point.x, point.y);
+			for (int i = 0; i < points.size(); ++i) 
+				if ((points[i] - mp).len2() < weights[i] * weights[i] * 100) {
+					if (w.get_scroll() > 0)
+						weights[i] *= 1.15;
+					else
+						weights[i] /= 1.15;
+					
+					updated = 1;
+					break;
+				}
+		}
+			
 		w.clear_events();
 		
 		// Left button operations
@@ -113,7 +129,7 @@ class scene : public component {
 			
 			// Match dragged point
 			for (int i = 0; i < points.size(); ++i) 
-				if ((points[i] - mp).len2() < 100) {
+				if ((points[i] - mp).len2() < weights[i] * weights[i] * 100) {
 					drag1_mode = 1;
 					drag1_id = i;
 					return;
@@ -121,6 +137,7 @@ class scene : public component {
 			
 			// Else add point
 			points.push_back(vec2(point.x, point.y));
+			weights.push_back(1.0);
 			
 			mouse1_down = 0;
 			updated = 1;
@@ -149,7 +166,7 @@ class scene : public component {
 				
 				const int CURVE_STEPS = 1000;
 				
-				bezier_curve(p, points, CURVE_STEPS);
+				rational_bezier(p, points, weights, CURVE_STEPS);
 			
 				p.color(0, 0, 255);
 				
@@ -163,7 +180,7 @@ class scene : public component {
 				// Render anchor points
 				if (render_circles)
 					for (int i = 0; i < points.size(); ++i)
-						p.arc(points[i].x-10, points[i].y-10, 20, 20);
+						p.arc(points[i].x-(10 * weights[i]), points[i].y-(10 * weights[i]), (20 * weights[i]), (20 * weights[i]));
 				
 			}
 			
