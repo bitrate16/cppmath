@@ -1,8 +1,11 @@
 #pragma once 
 
 #include <vector>
+#include <limits>
+#include <cmath>
 
 #include "spaint.h"
+#include "mat3l.h"
 #include "vec2.h"
 
 // Utility functions for painter
@@ -210,4 +213,99 @@ namespace spaint {
 			}				
 		}
 	};
+
+	void cubic_spline(spaint::painter& p, const std::vector<cppmath::vec2>& points, int steps = 1000, double start_slope = std::numeric_limits<double>::quiet_NaN(), double end_slope = std::numeric_limits<double>::quiet_NaN()) {
+		
+		// https://www.codeproject.com/articles/560163/csharp-cubic-spline-interpolation
+		
+		if (points.size() > 1) {
+			
+			using namespace std;
+			
+			if (steps <= 0)
+				return;
+		
+			double d = 1.0 / (double) steps;
+			
+			if (d == 0)
+				return;
+			
+			// Assume vector is sorted
+			
+			// Calculate
+			int n = points.size();
+			vector<double> r(n);
+			
+			cppmath::mat3l m(n);
+			double dx1, dx2, dy1, dy2;
+			
+			if (std::isnan(start_slope)) {
+				dx1 = points[1].x - points[0].x;
+				m.C[0] = 1.0 / dx1;
+				m.B[0] = 2.0 * m.C[0];
+				r[0] = 3.0 * (points[1].y - points[0].y) / (dx1 * dx1);
+			} else {
+				m.B[0] = 1;
+				r[0] = start_slope;
+			}
+			
+			for (int i = 1; i < n - 1; ++i) {
+				dx1 = points[i].x - points[i - 1].x;
+				dx2 = points[i + 1].x - points[i].x;
+				
+				m.A[i] = 1.0 / dx1;
+				m.C[i] = 1.0 / dx2;
+				m.B[i] = 2.0 * (m.A[i] + m.C[i]);
+				
+				dy1 = points[i].y - points[i - 1].y;
+				dy2 = points[i + 1].y - points[i].y;
+				r[i] = 3.0 * (dy1 / (dx1 * dx1) + dy2 / (dx2 * dx2));
+			}
+			
+			if (std::isnan(end_slope)) {
+				dx1 = points[n - 1].x - points[n - 2].x;
+				dy1 = points[n - 1].y - points[n - 2].y;
+				m.A[n - 1] = 1.0 / dx1;
+				m.B[n - 1] = 2.0 * m.A[n - 1];
+				r[n - 1] = 3.0 * (dy1 / (dx1 * dx1));
+			} else {
+				m.B[n - 1] = 1;
+				r[n - 1] = end_slope;
+			}
+			
+			vector<double> k = m.solve(r);
+			
+			vector<double> a(n - 1);
+			vector<double> b(n - 1);
+			
+			for (int i = 1; i < n; ++i) {
+				dx1 = points[i].x - points[i - 1].x;
+				dy1 = points[i].y - points[i - 1].y;
+				a[i - 1] = k[i - 1] * dx1 - dy1;
+				b[i - 1] = -k[i] * dx1 + dy1;
+			}
+			
+			// Render
+			
+			int lastIndex = 0;
+			double distance = points.back().x - points.front().x;
+			cppmath::vec2 point_old = points[0];
+			
+			
+			for (int i = 0; i < points.size() - 1; ++i) {
+				for (double t = 0.0; t <= 1.0; t += d) {
+					cppmath::vec2 point;
+					
+					point.x = points[i].x + t * (points[i + 1].x - points[i].x);
+					point.y = (1 - t) * points[i].y + t * points[i + 1].y + t * (1 - t) * (a[i] * (1 - t) + b[i] * t);
+					
+					if (t != 0.0) {
+						p.line(point_old.x, point_old.y, point.x, point.y);
+						point_old = point;
+					}
+				}	
+			}
+		}
+	};
+	
 };
