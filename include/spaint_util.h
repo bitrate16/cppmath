@@ -1,6 +1,7 @@
 #pragma once 
 
 #include <vector>
+#include <iostream>
 
 #include "spaint.h"
 #include "vec2.h"
@@ -104,6 +105,54 @@ namespace spaint {
 				p_x = x;
 				p_y = y;
 			}
+		}
+	};
+
+	void bezier_curve(spaint::painter& p, const std::vector<cppmath::vec2>& points, int steps = 1000) {
+		if (points.size() > 1) {
+			
+			if (steps <= 0)
+				return;
+		
+			double d = 1.0 / (double) steps;
+			
+			if (d == 0)
+				return;
+			
+			std::function<double(int)> factorial;
+			factorial = [&factorial](int n) -> double {
+				if (n <= 1)
+					return 1;
+				return factorial(n - 1) * n;
+			};
+			
+			std::vector<double> C;
+			for (int i = 0; i < points.size(); ++i) 
+				C.push_back(factorial(points.size() - 1) / (factorial(i) * factorial(points.size() - 1 - i)));
+			
+			auto B = [&C](int i, int n, double t) -> double { 
+				return C[i] * std::pow(t, i) * std::pow(1 - t, n - i);
+			};
+			
+			// Bezier:
+			// B[i, n](t) = C[n, i] * t ^ i * (1 - t) ^ (n - i)
+			// r(t) = SUM[ i = 0; i <= N; B[i, n](t) * P[i]
+			
+			cppmath::vec2 point_old = points[0];
+			
+			for (double t = 0.0; t <= 1.0; t += d) {
+				cppmath::vec2 point;
+				
+				for (int i = 0; i < points.size(); ++i) {
+					double part_mult = B(i, points.size() - 1, t);
+					point += part_mult * points[i];
+				}
+				
+				if (t != 0.0) {
+					p.line(point_old.x, point_old.y, point.x, point.y);
+					point_old = point;
+				}
+			}				
 		}
 	};
 };

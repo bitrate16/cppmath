@@ -22,6 +22,7 @@
 #include <vector>
 
 #include "spaint.h"
+#include "spaint_util.h"
 #include "cppmath.h"
 #include "vec2.h"
 #include "ivec2.h"
@@ -30,24 +31,15 @@ using namespace std;
 using namespace spaint;
 using namespace cppmath;
 
-#define KEY_ESCAPE 9
+#define KEY_ESCAPE  9
+#define KEY_R      27
+#define KEY_L      46
+#define KEY_C      54
+#define KEY_I      31
 
-// Bezier curve by points visualisation using spaint tool.
+// Hermite spline by points visualisation using spaint tool.
 
-// bash c.sh "-lX11" example/bezier_qurve
-
-// curve function
-
-inline double t_a() { return 0.0; }
-
-inline double t_b() { return 1.0; }
-
-inline double t_d() { return 0.00001; }
-
-vec2 curve(double t) {
-	t *= 6.28318530718;
-	return vec2(50.0) + vec2(100.0 * (0.5 + std::sin(t) * 0.5) * std::cos(t * 0.5), 100.0 * (0.5 + std::cos(t) * 0.5)).mul(1.0);
-};
+// bash c.sh "-lX11" example/bezier_curve
 
 // rendering
 
@@ -55,15 +47,26 @@ class scene : public component {
 	
 	void create() {
 		get_paint().init_font();
-		get_window().set_title("Bezier draw example");
+		get_window().set_title("Hermite spline example");
 	};
 	
 	vector<vec2> points;
+	vector<vec2> derivatives;
 	
-	bool mouse_down = 0;
 	ivec2 last_pointer;
+	
+	// Points drag
+	bool mouse1_down = 0;
+	bool drag1_mode = 0;
+	int  drag1_id = 0;
+	
 	bool resized = 1;
 	bool updated = 0;
+	
+	// Render options
+	bool render_lines = 1;   // L
+	bool render_circles = 1; // C
+	bool render_indices = 1; // I
 	
 	void resize() {
 		resized = 1;
@@ -74,27 +77,60 @@ class scene : public component {
 		painter& p = w.get_paint();
 		
 		// Block untill event is reached
-		if (!mouse_down) w.wait_event(1);
+		if (!mouse1_down) w.wait_event(1);
 		
-		if (w.has_key_event(0)) {
-			cout << w.get_key_down() << endl;
+		if (w.has_key_event(0))
 			if (w.get_key_down() == KEY_ESCAPE)
 				w.stop();
-		}
-		
+			else if (w.get_key_down() == KEY_R) {
+				points.clear();
+				updated = 1;
+			} else if (w.get_key_down() == KEY_L) {
+				render_lines = !render_lines;
+				updated = 1;
+			} else if (w.get_key_down() == KEY_C) {
+				render_circles = !render_circles;
+				updated = 1;
+			} else if (w.get_key_down() == KEY_I) {
+				render_indices = !render_indices;
+				updated = 1;
+			}
+			
 		if (w.has_mouse_event(0)) 
 			if (w.get_button_down() == Button1) 
-				mouse_down = 1;
-			else if (w.get_button_up() == Button1) 
-				mouse_down = 0;
+				mouse1_down = 1;
+			else if (w.get_button_up() == Button1) {
+				mouse1_down = 0;
+				drag1_mode = 0;
+			}
 			
 		w.clear_events();
-			
-		if (mouse_down) {
+		
+		// Left button operations
+		if (!drag1_mode && mouse1_down) {
+
 			window::pointer point = w.get_pointer();
+			vec2 mp(point.x, point.y);
+			
+			// Match dragged point
+			for (int i = 0; i < points.size(); ++i) 
+				if ((points[i] - mp).len2() < 100) {
+					drag1_mode = 1;
+					drag1_id = i;
+					return;
+				}
+			
+			// Else add point
 			points.push_back(vec2(point.x, point.y));
 			
-			mouse_down = 0;
+			mouse1_down = 0;
+			updated = 1;
+		} else if (drag1_mode) {
+			// Move selected point
+			window::pointer point = w.get_pointer();
+			points[drag1_id].x = point.x;
+			points[drag1_id].y = point.y;
+			
 			updated = 1;
 		}
 			
@@ -114,35 +150,35 @@ class scene : public component {
 				
 				const int CURVE_STEPS = 1000;
 				
-				double curve_len = math::bezier_length(CURVE_STEPS, points);
-				cout << " curve length = " << curve_len << endl;
-				
-				// Bezier:
-				// B(t) = SUM [ i = 1; i <= N; P[i] * C[N, i] * t^i * (1 - t)^i ]
+				bezier_curve(p, points, CURVE_STEPS);
 			
-				double d = 1.0 / (double) CURVE_STEPS;
+				p.color(0, 0, 255);
 				
-				std::vector<vec2> const_multipliers; // [::] = P[i] * C[N, i]
-				for (int i = 0; i < points.size(); ++i) {
-					double C = (double) math::factorial(points.size()) / ((double) math::factorial(i + 1) * (double) math::factorial(points.size() - i - 1));
-					const_multipliers.push_back(points[i] * C);
-				}
+				// Render frame lines
+				if (render_lines)
+					for (int i = 0; i < points.size() - 1; ++i) 
+						p.line(points[i].x, points[i].y, points[i + 1].x, points[i + 1].y);	
 				
-				for (double t = 0.0; t <= 1.0; t += d) {
-					vec2 point;
-					
-					for (double i = 1; i < points.size() + 1; i += 1.0) {
-						double part_mult = std::pow(t, i) * std::pow(1 - t, i);
-						point += const_multipliers[(int) i - 1] * part_mult;
-					}
-					
-					p.point(point.x, point.y);
-				}				
+				p.color(255, 0, 255);
+				
+				// Render anchor points
+				if (render_circles)
+					for (int i = 0; i < points.size(); ++i)
+						p.arc(points[i].x-10, points[i].y-10, 20, 20);
+				
 			}
 			
 			p.color(0, 255, 255);
-			for (int i = 0; i < points.size(); ++i)
-				p.point(points[i].x, points[i].y);
+			
+			// Render frame lines
+			if (render_indices)
+				for (int i = 0; i < points.size(); ++i) {
+					p.color(0, 255, 255);
+					p.point(points[i].x, points[i].y);
+					p.color(255, 255, 0);
+					string ind = to_string(i);
+					p.text(points[i].x, points[i].y, ind.c_str());
+				}
 			
 			resized = 0;
 			updated = 0;
