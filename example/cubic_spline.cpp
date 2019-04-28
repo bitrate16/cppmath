@@ -37,7 +37,7 @@ using namespace cppmath;
 #define KEY_C      54
 #define KEY_I      31
 
-// Hermite spline by points visualisation using spaint tool.
+// Cobic spline by points visualisation using spaint tool.
 
 // bash c.sh "-lX11" example/cubic_spline
 

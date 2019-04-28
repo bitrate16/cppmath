@@ -37,9 +37,9 @@ using namespace cppmath;
 #define KEY_C      54
 #define KEY_I      31
 
-// Bezier by points visualisation using spaint tool.
+// Lagrange spline by points visualisation using spaint tool.
 
-// bash c.sh "-lX11" example/bezier_curve
+// bash c.sh "-lX11" example/lagrange_spline
 
 // rendering
 
@@ -47,7 +47,7 @@ class scene : public component {
 	
 	void create() {
 		get_paint().init_font();
-		get_window().set_title("Bezier curve example");
+		get_window().set_title("Lagrange spline example");
 	};
 	
 	vector<vec2> points;
@@ -120,13 +120,29 @@ class scene : public component {
 				}
 			
 			// Else add point
-			points.push_back(vec2(point.x, point.y));
+			if (points.size() && points.back().x > point.x)
+				points.push_back(vec2(points.back().x, point.y));
+			else
+				points.push_back(vec2(point.x, point.y));
 			
 			mouse1_down = 0;
 			updated = 1;
 		} else if (drag1_mode) {
 			// Move selected point
 			window::pointer point = w.get_pointer();
+			
+			if (drag1_id == 0) {
+				if (point.x > points[drag1_id + 1].x)
+					point.x = points[drag1_id + 1].x;
+			} else if (drag1_id == points.size() - 1) {
+				if (point.x < points[drag1_id - 1].x)
+					point.x = points[drag1_id - 1].x;
+			} else
+				if (point.x > points[drag1_id + 1].x)
+					point.x = points[drag1_id + 1].x;
+				else if (point.x < points[drag1_id - 1].x)
+					point.x = points[drag1_id - 1].x;
+				
 			points[drag1_id].x = point.x;
 			points[drag1_id].y = point.y;
 			
@@ -149,7 +165,7 @@ class scene : public component {
 				
 				const int CURVE_STEPS = 1000;
 				
-				bezier_curve(p, points, CURVE_STEPS);
+				lagrange_spline(p, points, CURVE_STEPS);
 			
 				p.color(0, 0, 255);
 				

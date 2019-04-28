@@ -150,10 +150,9 @@ namespace spaint {
 					point += part_mult * points[i];
 				}
 				
-				if (t != 0.0) {
+				if (t != 0.0) 
 					p.line(point_old.x, point_old.y, point.x, point.y);
-					point_old = point;
-				}
+				point_old = point;
 			}				
 		}
 	};
@@ -206,10 +205,9 @@ namespace spaint {
 					point += part_mult * points[i];
 				}
 				
-				if (t != 0.0) {
+				if (t != 0.0) 
 					p.line(point_old.x, point_old.y, point.x, point.y);
-					point_old = point;
-				}
+				point_old = point;
 			}				
 		}
 	};
@@ -299,13 +297,64 @@ namespace spaint {
 					point.x = points[i].x + t * (points[i + 1].x - points[i].x);
 					point.y = (1 - t) * points[i].y + t * points[i + 1].y + t * (1 - t) * (a[i] * (1 - t) + b[i] * t);
 					
-					if (t != 0.0) {
+					if (t != 0.0) 
 						p.line(point_old.x, point_old.y, point.x, point.y);
-						point_old = point;
-					}
+					point_old = point;
 				}	
 			}
 		}
 	};
+	
+	void lagrange_spline(spaint::painter& p, const std::vector<cppmath::vec2>& points, int steps = 1000, double start = std::numeric_limits<double>::quiet_NaN(), double end = std::numeric_limits<double>::quiet_NaN()) {
+		if (points.size() > 1) {
+			
+			if (steps <= 0)
+				return;
+		
+			double d = 1.0 / (double) steps;
+			
+			if (d == 0)
+				return;
+			
+			auto interpLagPol = [&points](double x) -> double { 
+				double pol = 0.0;
+				
+				for (int i = 0; i < points.size(); ++i) {
+					double basic_pol = 1;
+					
+					for (int j = 0; j < points.size(); ++j)
+						if (i != j)
+							basic_pol *= (x - points[j].x) / (points[i].x - points[j].x);
+						
+					pol += basic_pol * points[i].y;
+				}
+				
+				return pol;
+			};
+			
+			// Assume vector is sorted
+			
+			if (std::isnan(start))
+				start = points.front().x;
+			
+			if (std::isnan(end))
+				end = points.back().x;
+			
+			
+			cppmath::vec2 point_old = start;
+			
+			for (double t = 0; t <= 1.0; t += d) {
+				cppmath::vec2 point;
+				
+				point.x = (end - start) * t + start;
+				point.y = interpLagPol(point.x);
+				
+				if (t != 0.0) 
+					p.line(point_old.x, point_old.y, point.x, point.y);
+				point_old = point;
+			}				
+		}
+	};
+	
 	
 };
