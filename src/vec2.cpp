@@ -70,8 +70,8 @@ vec2 vec2::operator-() {
 /* Nothing */
 vec2 vec2::operator+() {
 	vec2 v(*this);
-	v.x = -v.x;
-	v.y = -v.y;
+	v.x = v.x;
+	v.y = v.y;
 	return v;
 }
 

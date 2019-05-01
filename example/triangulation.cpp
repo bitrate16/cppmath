@@ -49,7 +49,7 @@ class scene : public component {
 	ivec2 points[POINTS_AMOUNT];
 	
 	int total_nodes = 0;
-	// Array of nodes with inices of vertices
+	// Array of nodes with indices of vertices
 	int nodes[POINTS_AMOUNT * POINTS_AMOUNT][2]; 
 	
 	bool mouse_down = 0;

@@ -76,9 +76,9 @@ vec3 vec3::operator-() {
 /* Nothing */
 vec3 vec3::operator+() {
 	vec3 v(*this);
-	v.x = -v.x;
-	v.y = -v.y;
-	v.z = -v.z;
+	v.x = v.x;
+	v.y = v.y;
+	v.z = v.z;
 	return v;
 }
 
@@ -97,6 +97,7 @@ vec3 cppmath::operator-(const vec3 &v1, const vec3 &v2) {
 	vec3 v(v1);
 	v.x -= v2.x;
 	v.y -= v2.y;
+	v.z -= v2.z;
 	return v;
 }
 
