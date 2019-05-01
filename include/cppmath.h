@@ -228,6 +228,32 @@ namespace cppmath {
 			// Assume no more precision
 			return RT_COLLINEAR;
 		};
+		
+		// Checks for two segments intersection
+		bool right_intersects(const vec2& A, const vec2& B, const vec2& C, const vec2& D) {
+			return right_turn(A, C, D) != right_turn(B, C, D) && right_turn(C, A, B) != right_turn(D, A, B);
+		};
+		
+		// Check if point belongs to line segment
+		bool point_on_segment(const vec2& X, const vec2& A, const vec2& B) {
+			if (A.x == B.x) {
+				if (X.x != A.x)
+					return 0;
+				else 
+					return A.y >= X.y && X.y >= B.y || A.y <= X.y && X.y <= B.y;
+			} else if (A.y == B.y) {
+				if (X.y != A.y)
+					return 0;
+				else 
+					return A.x >= X.x && X.x >= B.x || A.x <= X.x && X.x <= B.x;
+			} else {
+				double dx1 = A.x - X.x;
+				double dy1 = A.y - X.y;
+				double dx2 = X.x - B.x;
+				double dy2 = X.y - B.y;
+				return dx1 / dy1 == dx2 / dy2;
+			}
+		};
 	
 		// Check if point is inside the triangle using right turn predicate
 		inline bool in_triangle(const vec2& x, const vec2& a, const vec2& b, const vec2& c) {
@@ -374,6 +400,90 @@ namespace cppmath {
 			}
 			
 			return curve_len;
+		};
+	
+		bool inside_poly(vec2 x, const std::vector<vec2>& poly_points) {
+			if (poly_points.size() <= 2)
+				return 0;
+			
+			// 0 -> 0, 1
+			// 1 -> 1, 2
+			// 2 -> 2, 3
+			// 3 -> 3, 4
+			// .........
+			
+			// right turn arrangements of edge points
+			typedef struct { int a, b; } edge_t;
+			
+			// Maximal right vertex coord * 2
+			double right = poly_points[0].x;
+			for (int i = 1; i < poly_points.size(); ++i)
+				right = right < poly_points[i].x ? poly_points[i].x * 2.0 : right;
+			
+			// Ray coords
+			vec2 ray_a = x;
+			vec2 ray_b(right, x.y);
+			int trace = 0;
+			
+			std::vector<int> arrange(poly_points.size());
+			for (int i = 0; i < poly_points.size(); ++i)
+				arrange[i] = right_turn(poly_points[i], ray_a, ray_b);
+			
+			auto edge = [&arrange](int i) -> edge_t {
+				i = i % arrange.size();
+				if (i == arrange.size() - 1) // n-1 -> n-1, 0
+					return { arrange.back(), arrange.front() };
+				return { arrange[i], arrange[i + 1] };
+			};
+			                                                                                                                  
+			// \                 \                /    \                 \                      /                                                                            
+			//  \                 \              /      \                 \                    /                                                                              
+			//   \                 \            /        \                 \                  /                                                                               
+			//    \                 \          /          \                 \     5          /               7                                                                 
+			//     \                 \   3    /            \                 \              /             _______                                                                    
+			//      \                 \      /              \                 \            /                                      \                                             
+			//       \                 \    /                \                 \          /                                        \    8                                        
+			//        \                 \  /                  \                 \        /                                          \                                          
+			//     1   \                 \/                    \______           \______/            ______                      ____\____                                                    
+			//         /         /\                                   \                             /      \                          \                                                 
+			//        /         /  \                                   \                           /        \                          \                                        
+			//       /         /    \                               4   \                         /          \                          \                                       
+			//      /         /      \                                   \                       /            \                          \                                      
+			//     /         /        \                                   \                     /   6          \                                                               
+			//    /         /          \                                   \                   /                \                                                              
+			//   /         /      2     \                                   \                 /                  \                                                             
+			//  /         /              \                                   \               /                    \                                                            
+			// /         /                \                                   \             /                      \                                                                                                                             
+			
+			int inter = 0;
+			
+			for (int i = 0; i < arrange.size(); ++i) {
+				if (edge(i).a == 0 && edge(i).b == 0) // 7
+					continue;
+				if (edge(i).a == -1 && edge(i).b == 1 || edge(i).a == 1 && edge(i).b == -1) // 8
+					if (right_intersects(poly_points[i], poly_points[i == poly_points.size() - 1 ? 0 : i + 1], ray_a, ray_b))
+						++inter;
+				if (edge(i).a != 0 && edge(i).b == 0) { // 1, 2, 3, 4, 5, 6
+					int start = edge(i).a;
+					int start_i = (i + 1) % poly_points.size();
+					
+					++i;
+					while (edge(i).a == 0 && edge(i).b == 0) ++i;
+					
+					int end = edge(i).b;
+					int end_i = i % poly_points.size();
+					
+					if (start == -1 && end == -1 || start == 1 && end == 1) // 2, 3, 5, 6
+						continue;
+					
+					if (point_on_segment(poly_points[start_i], ray_a, ray_b)
+						&&
+						point_on_segment(poly_points[end_i], ray_a, ray_b))
+						++inter; // 1
+				}
+			};
+			
+			return inter % 2;
 		};
 	};
 };

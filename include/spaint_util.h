@@ -109,6 +109,70 @@ namespace spaint {
 			}
 		}
 	};
+	
+	std::vector<cppmath::vec2> hermite_derivatives(const std::vector<cppmath::vec2>& points) {
+		std::vector<cppmath::vec2> derivatives;
+		for (int i = 0; i < points.size(); ++i) {
+			cppmath::vec2 ptan;
+			
+			if (i == 0) 
+				ptan = points[1] - points[0];
+			else if (i == points.size() - 1)
+				ptan = points[i] - points[i - 1];
+			else
+				ptan = (points[i + 1] - points[i - 1]) / 2.0;
+				
+			derivatives.push_back(ptan);
+		}
+		
+		return derivatives;
+	};
+	
+	// Calculates curve derivative vector on given sector [Xi, Xi+1] at given point t.
+	cppmath::vec2 hermite_derivative(const std::vector<cppmath::vec2>& points, const std::vector<cppmath::vec2>& derivatives, int sector, double t) {
+		if (sector < 0 || sector >= points.size())
+			return std::numeric_limits<double>::quiet_NaN();
+		
+		auto P = [](double t, double p0, double p1, double m0, double m1) -> double { 
+			double t2 = t * t;
+			double t3 = t2 * t;
+			return  m0 * (3.0 * t2 - 4.0 * t + 1.0)
+					+ 
+					t * (m1 * (3.0 * t - 2.0) 
+						+ 
+						6.0 * p0 * t 
+						- 
+						6.0 * p0 
+						- 
+						6.0 * p1 * t 
+						+ 
+						6.0 * p1);
+		};
+		
+		return cppmath::vec2(P(t, points[sector].x, points[sector + 1].x, derivatives[sector].x, derivatives[sector + 1].x),
+							 P(t, points[sector].y, points[sector + 1].y, derivatives[sector].y, derivatives[sector + 1].y));			
+	};
+	
+	// Calculates curve point vector on given sector [Xi, Xi+1] at given point t.
+	cppmath::vec2 hermite_point(const std::vector<cppmath::vec2>& points, const std::vector<cppmath::vec2>& derivatives, int sector, double t) {
+		if (sector < 0 || sector >= points.size())
+			return std::numeric_limits<double>::quiet_NaN();
+		
+		auto P = [](double t, double p0, double p1, double m0, double m1) -> double { 
+			double t2 = t * t;
+			double t3 = t2 * t;
+			return  (2.0 * t3 - 3.0 * t2 + 1.0) * p0
+					+
+					(t3 - 2.0 * t2 + t) * m0
+					+
+					(-2.0 * t3 + 3.0 * t2) * p1
+					+
+					(t3 - t2) * m1;
+		};
+		
+		return cppmath::vec2(P(t, points[sector].x, points[sector + 1].x, derivatives[sector].x, derivatives[sector + 1].x),
+							 P(t, points[sector].y, points[sector + 1].y, derivatives[sector].y, derivatives[sector + 1].y));			
+	};
 
 	void bezier_curve(spaint::painter& p, const std::vector<cppmath::vec2>& points, int steps = 1000) {
 		if (points.size() > 1) {
@@ -356,5 +420,73 @@ namespace spaint {
 		}
 	};
 	
-	
+	/*void b_spline(spaint::painter& p, const std::vector<cppmath::vec2>& points, int steps = 1000) {
+		if (points.size() > 1) {
+			
+			if (steps <= 0)
+				return;
+		
+			double d = 1.0 / (double) steps;
+			
+			if (d == 0)
+				return;
+			void BSplineCurve(const Dot &point1, 
+                  const Dot &point2, 
+                  const Dot &point3,
+                  const Dot &point4, 
+                  const double t,
+                  Dot &result)
+			{
+				const double t2 = t * t;
+				const double t3 = t2 * t;
+				const double mt = 1.0 - t;
+				const double mt3 = mt * mt * mt;
+
+				const double bi3 = mt3;
+				const double bi2 = 3 * t3 - 6 * t2 + 4;
+				const double bi1 =-3 * t3 + 3 * t2 + 3 * t + 1;
+				const double bi  = t3;
+
+				result.x = point1.x * bi3 + 
+						   point2.x * bi2 +
+						   point3.x * bi1 +
+						   point4.x * bi;
+				result.x /= 6.0;
+
+				result.y = point1.y * bi3 + 
+						   point2.y * bi2 +
+						   point3.y * bi1 +
+						   point4.y * bi;
+				result.y /= 6.0;
+			}
+			
+			auto B = [&points](double t, int i) -> cppmath::vec2 {
+				double t2 = t * t;
+				double t3 = t2 * t;
+				double mt = 1.0 - t;
+				double mt3 = mt * mt * mt;
+				
+				double bi3 = mt3;
+				double bi2 = 3.0 * t3 - 6.0 * t2 + 4.0;
+				double bi1 =-3.0 * t3 + 3.0 * t2 + 3.0 * t + 1.0;
+				double bi  = t3;
+				
+				return cppmath::vec2(
+			};
+			
+			
+			cppmath::vec2 point_old = start;
+			
+			for (double t = 0; t <= 1.0; t += d) {
+				cppmath::vec2 point;
+				
+				point.x = (end - start) * t + start;
+				point.y = interpLagPol(point.x);
+				
+				if (t != 0.0) 
+					p.line(point_old.x, point_old.y, point.x, point.y);
+				point_old = point;
+			}				
+		}
+	};*/
 };

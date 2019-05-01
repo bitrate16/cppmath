@@ -77,6 +77,8 @@ namespace cppmath {
 		
 		double inv();
 		
+		double tan();
+		
 		/* Normalize the vector */
 		vec2 operator~();
 	

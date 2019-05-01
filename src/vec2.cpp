@@ -140,6 +140,10 @@ double vec2::inv() {
 	return 1.0 / (x * x + y * y);
 }
 
+double vec2::tan() {
+	return x / y;
+}
+
 
 // C U S T O M _ O P E R A T O R S
 
