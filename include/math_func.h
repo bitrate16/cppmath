@@ -5,6 +5,7 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <cmath>
 
 // Represents callable math functions
 // a * b - x + sin(cos( e ^ 12))
@@ -12,7 +13,7 @@
 // function ::= <add_exp>
 // add_exp  ::= <mul_exp>  | <mul_exp>  + <add_exp> | <mul_exp>  - <add_exp>
 // mul_exp  ::= <atomic>   | <atomic> * <mul_exp>   | <atomic> / <mul_exp>  | <atomic> ^ <mul_exp>
-// atomic   ::= -<atomic>  | +<atomic> | <name>     | <name>({<add_exp>, }) | <number> | (<add_exp>)
+// atomic   ::= -<atomic>  | +<atomic> | <name>     | <name>({<add_exp>, }) | <number> | (<add_exp>) | <atomic> ^ <atomic>
 
 namespace math_func {
 	struct func {
@@ -39,6 +40,7 @@ namespace math_func {
 		static const int DIV = 3;
 		static const int POS = 4;
 		static const int NEG = 5;
+		static const int POW = 6;
 		
 		func* left = nullptr;
 		func* right = nullptr;
@@ -57,6 +59,7 @@ namespace math_func {
 				case SUB: return left->evaluate(values, functions) - right->evaluate(values, functions);
 				case MUL: return left->evaluate(values, functions) * right->evaluate(values, functions);
 				case DIV: return left->evaluate(values, functions) / right->evaluate(values, functions);
+				case POW: return std::pow(left->evaluate(values, functions), right->evaluate(values, functions));
 				case POS: return + (left->evaluate(values, functions));
 				case NEG: return - (left->evaluate(values, functions));
 			}
@@ -68,6 +71,7 @@ namespace math_func {
 				case SUB: os << *left << " - " << *right; break;
 				case MUL: os << *left << " * " << *right; break;
 				case DIV: os << *left << " / " << *right; break;
+				case POW: os << *left << " ^ " << *right; break;
 				case POS: os << *left;                    break;
 				case NEG: os << "-(" << *left << ')';     break;
 			}
@@ -151,7 +155,7 @@ namespace math_func {
 		enum token_type {
 			TNAME, TNUM,
 			TLBR, TRBR,
-			TPLS, TMNS, TMUL, TDIV, 
+			TPLS, TMNS, TMUL, TDIV, TPOW, 
 			TCOL, // ','
 			TERR
 		};
@@ -177,6 +181,7 @@ namespace math_func {
 					case TMNS : std::cout << '-';           break;
 					case TMUL : std::cout << '*';           break;
 					case TDIV : std::cout << '/';           break;
+					case TPOW : std::cout << '^';           break;
 					case TCOL : std::cout << ',';           break;
 					case TERR : std::cout << "TERR ";       break;
 				};
@@ -273,6 +278,9 @@ namespace math_func {
 				} else if (in[i] == '*') {
 					++i;
 					tokens.push_back({ TMUL });
+				} else if (in[i] == '^') {
+					++i;
+					tokens.push_back({ TPOW });
 				} else if (in[i] == '/') {
 					++i;
 					tokens.push_back({ TDIV });
@@ -294,8 +302,36 @@ namespace math_func {
 		
 		func* add_exp(const std::vector<token>& tokens, int& index);
 		
-		func* atomic(const std::vector<token>& tokens, int& index) {
-			if (index < tokens.size()) {				
+		func* atomic(const std::vector<token>& tokens, int& index, int ignore_pow = 0) {
+			if (index < tokens.size()) {		
+				
+				// pow (^) has max priority and should be parsed before other atoms.
+				// to avoid recursive loop, add special flag to stop atoms from left-recursion.
+				if (!ignore_pow) {
+					func* atm = atomic(tokens, index, 1);
+					
+					if (!atm)
+						return nullptr;
+					
+					if (index >= tokens.size())
+						return atm;
+					
+					if (tokens[index].type == TPOW) {
+						++index;
+						
+						func* atm2 = atomic(tokens, index);
+						
+						if (!atm2) {
+							delete atm;
+							return nullptr;
+						}
+						
+						return new operator_func(operator_func::POW, atm, atm2);
+					}
+					
+					return atm;
+				}
+				
 				if (tokens[index].type == TNAME) { // name, name(...)
 					std::string name = tokens[index].str;
 					++index;
