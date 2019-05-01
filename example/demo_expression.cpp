@@ -29,5 +29,7 @@ int main() {
 			std::cout << "f(" << x << ", " << y << ") = " << funct->evaluate(values, functions) << std::endl;
 		}
 	
+	delete funct;
+	
 	return 0;
 };

@@ -25,6 +25,8 @@ namespace math_func {
 		virtual void print(std::ostream& os) const = 0;
 		
 		friend std::ostream& operator<<(std::ostream& os, const func& f);
+		
+		virtual func* copy() = 0;
 	};
 	
 	std::ostream& operator<<(std::ostream& os, const func& f) {
@@ -71,10 +73,14 @@ namespace math_func {
 				case SUB: os << *left << " - " << *right; break;
 				case MUL: os << *left << " * " << *right; break;
 				case DIV: os << *left << " / " << *right; break;
-				case POW: os << *left << " ^ " << *right; break;
+				case POW: os << *left << " ^ (" << *right << ')'; break;
 				case POS: os << *left;                    break;
 				case NEG: os << "-(" << *left << ')';     break;
 			}
+		};
+		
+		func* copy() {
+			return new operator_func(opcode, left, right);
 		};
 	};
 	
@@ -97,6 +103,10 @@ namespace math_func {
 		void print(std::ostream& os) const {
 			os << name;
 		};
+		
+		func* copy() {
+			return new name_func(name);
+		};
 	};
 	
 	struct const_func : public func {		
@@ -112,6 +122,10 @@ namespace math_func {
 		
 		void print(std::ostream& os) const {
 			os << val;
+		};
+		
+		func* copy() {
+			return new const_func(val);
 		};
 	};
 	
@@ -144,10 +158,22 @@ namespace math_func {
 			os << name << '(';
 			for (int i = 0; i < args.size(); ++i) {
 				os << *args[i];
-				if (i != args.size())
+				if (i != args.size() - 1)
 					os << ", ";
 			}
 			os << ')';
+		};
+		
+		std::vector<func*> copy_args() {
+			std::vector<func*> argc(args.size());
+			for (int i = 0; i < args.size(); ++i)
+				argc[i] = args[i]->copy();
+			
+			return argc;
+		};
+		
+		func* copy() {			
+			return new call_func(name, copy_args());
 		};
 	};
 	
@@ -343,7 +369,7 @@ namespace math_func {
 						
 						while (1) {
 							// Check EOF
-							if (index >= tokens.size() - 1) {
+							if (index >= tokens.size()) {
 								for (int i = 0; i < args.size(); ++i)
 									delete args[i];
 								return nullptr;
@@ -365,7 +391,7 @@ namespace math_func {
 							args.push_back(exp2);
 							
 							// Check EOF
-							if (index >= tokens.size() - 1) {
+							if (index >= tokens.size()) {
 								for (int i = 0; i < args.size(); ++i)
 									delete args[i];
 								return nullptr;
