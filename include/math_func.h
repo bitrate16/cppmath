@@ -330,8 +330,9 @@ namespace math_func {
 				
 				if (alpha(in[i])) {
 					std::string tmp;
+					tmp += in[i++];
 					
-					while (i < in.size() && alpha(in[i])) {
+					while (i < in.size() && (alpha(in[i]) || digit(in[i]))) {
 						tmp += in[i];
 						++i;
 					}

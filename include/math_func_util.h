@@ -54,31 +54,35 @@ namespace math_func {
 			// d f(x, y, z, ...) / dt = f'[x] (x, y, z, ...) * x'[t] + f'[y] (x, y, z, ...) * y'[t] + ...
 			
 			if (t->name == "sin") {
-				if (t->args.size() == 0)
+				if (t->args.size() != 1)
 					throw std::runtime_error("derivate failed: cos(x)");
 				
 				func* fun = new call_func("cos", t->copy_args());
 				
 				func* der = mul(fun, derivate(t->args[0], varname));
 				
-				for (int i = 1; i < t->args.size(); ++i)
-					der = sum(der, mul(fun->copy(), derivate(t->args[i], varname)));
+				// for (int i = 1; i < t->args.size(); ++i)
+				// 	der = sum(der, mul(fun->copy(), derivate(t->args[i], varname)));
 				
 				return der;
 			}
 			
 			if (t->name == "cos") {
-				if (t->args.size() == 0)
+				if (t->args.size() != 1)
 					throw std::runtime_error("derivate failed: cos(x)");
 				
 				func* fun = neg(new call_func("sin", t->copy_args()));
 				
 				func* der = mul(fun, derivate(t->args[0], varname));
 				
-				for (int i = 1; i < t->args.size(); ++i)
-					der = sum(der, mul(fun->copy(), derivate(t->args[i], varname)));
-				
 				return der;
+			}
+			
+			if (t->name == "ln") {
+				if (t->args.size() != 1)
+					throw std::runtime_error("derivate failed: ln(x)");
+				
+				return div(derivate(t->args[0], varname), t->args[0]->copy());
 			}
 			
 			throw std::runtime_error("derivate function failed: function not defined");
@@ -178,20 +182,59 @@ namespace math_func {
 					delete b;
 					
 					return n;
-				} else if (a && (p = dynamic_cast<const_func*>(a)) && p->val == 0) { // 0 * exp
-					delete a;
-					delete b;
-					return new const_func(0);
-				} else if (a && (p = dynamic_cast<const_func*>(a)) && p->val == 1) { // 1 * exp
-					delete a;
-					return b;
-				} else if (b && (q = dynamic_cast<const_func*>(b)) && q->val == 0) { // exp * 0
-					delete a;
-					delete b;
-					return new const_func(0);
-				} else if (b && (q = dynamic_cast<const_func*>(b)) && q->val == 1) { // exp * 1
-					delete b;
-					return a;
+				} else if (t->opcode == operator_func::MUL) {
+					if (a && (p = dynamic_cast<const_func*>(a)) && p->val == 0) { // 0 * exp
+						delete a;
+						delete b;
+						return new const_func(0);
+					} else if (a && (p = dynamic_cast<const_func*>(a)) && p->val == 1) { // 1 * exp
+						delete a;
+						return b;
+					} else if (b && (q = dynamic_cast<const_func*>(b)) && q->val == 0) { // exp * 0
+						delete a;
+						delete b;
+						return new const_func(0);
+					} else if (b && (q = dynamic_cast<const_func*>(b)) && q->val == 1) { // exp * 1
+						delete b;
+						return a;
+					} else
+						return new operator_func(t->opcode, a, b);
+				} else if (t->opcode == operator_func::DIV) {
+					if (a && (p = dynamic_cast<const_func*>(a)) && p->val == 0) { // 0 / exp
+						delete a;
+						delete b;
+						return new const_func(0);
+					} else
+						return new operator_func(t->opcode, a, b);
+				} else if (t->opcode == operator_func::ADD) {
+					if (a && (p = dynamic_cast<const_func*>(a)) && p->val == 0) { // 0 + exp
+						delete a;
+						return b;
+					} else if (b && (q = dynamic_cast<const_func*>(b)) && q->val == 0) { // exp + 0
+						delete b;
+						return a;
+					} else
+						return new operator_func(t->opcode, a, b);
+				} else if (t->opcode == operator_func::SUB) {
+					if (a && (p = dynamic_cast<const_func*>(a)) && p->val == 0) { // 0 - exp
+						delete a;
+						
+						operator_func* o;
+						
+						if ((o = dynamic_cast<operator_func*>(b)) && o->opcode == operator_func::NEG) { // - -exp -> exp
+							func* r = o->left;
+							o->left = nullptr;
+							delete b;
+							
+							return r;
+						} else
+							return neg(b);
+						
+					} else if (b && (q = dynamic_cast<const_func*>(b)) && q->val == 0) { // exp - 0
+						delete b;
+						return a;
+					} else
+						return new operator_func(t->opcode, a, b);
 				} else
 					return new operator_func(t->opcode, a, b);
 				

@@ -6,7 +6,7 @@
 // clear && g++ -Iinclude -std=c++17 -w -g example/demo_derivative.cpp -o example/demo_derivative && ./example/demo_derivative
 
 int main() {
-	std::string str = "sin(x)^8*cos(x^2)";
+	std::string str = "cos(ln(x))";
 	
 	math_func::func* funct = math_func::parse(str);
 	if (!funct) {
