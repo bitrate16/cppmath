@@ -32,9 +32,10 @@ namespace math_func {
 		return new operator_func(operator_func::POW, a, new const_func(value));
 	};
 	
+	// Returns new func with value of derivative with respect to varname
 	func* derivate(func* f, const std::string& varname) {
 		if (f == nullptr)
-			return nullptr;
+			throw std::runtime_error("derivate failed: nullptr");
 		
 		if (dynamic_cast<const_func*>(f)) // const' = 0
 			return new const_func(0);
@@ -53,29 +54,29 @@ namespace math_func {
 			// d f(x, y, z, ...) / dt = f'[x] (x, y, z, ...) * x'[t] + f'[y] (x, y, z, ...) * y'[t] + ...
 			
 			if (t->name == "sin") {
-				call_func* fun = new call_func("cos", t->copy_args());
+				if (t->args.size() == 0)
+					throw std::runtime_error("derivate failed: cos(x)");
 				
-				if (fun->args.size() == 0)
-					return nullptr;
+				func* fun = new call_func("cos", t->copy_args());
 				
 				func* der = mul(fun, derivate(t->args[0], varname));
 				
-				for (int i = 1; i < fun->args.size(); ++i)
-					der = sum(der, mul(fun, derivate(t->args[i], varname)));
+				for (int i = 1; i < t->args.size(); ++i)
+					der = sum(der, mul(fun->copy(), derivate(t->args[i], varname)));
 				
 				return der;
 			}
 			
 			if (t->name == "cos") {
-				func* fun = neg(new call_func("sin", t->copy_args()));
-				
 				if (t->args.size() == 0)
-					return nullptr;
+					throw std::runtime_error("derivate failed: cos(x)");
+				
+				func* fun = neg(new call_func("sin", t->copy_args()));
 				
 				func* der = mul(fun, derivate(t->args[0], varname));
 				
 				for (int i = 1; i < t->args.size(); ++i)
-					der = sum(der, mul(fun, derivate(t->args[i], varname)));
+					der = sum(der, mul(fun->copy(), derivate(t->args[i], varname)));
 				
 				return der;
 			}
@@ -98,7 +99,7 @@ namespace math_func {
 				case operator_func::ADD:
 					return sum(derivate(t->left, varname), derivate(t->right, varname));
 				case operator_func::SUB: 
-					return sum(derivate(t->left, varname), derivate(t->right, varname));
+					return sub(derivate(t->left, varname), derivate(t->right, varname));
 				case operator_func::MUL: 
 					return  sum(mul(derivate(t->left, varname), t->right->copy()), 
 								mul(t->left->copy(), derivate(t->right, varname)));
@@ -115,10 +116,102 @@ namespace math_func {
 				case operator_func::POS:
 					return derivate(t->left, varname);
 				case operator_func::NEG: 
-					return neg(derivate(t->right, varname));
+					return neg(derivate(t->left, varname));
+				default:
+					throw std::runtime_error("derivate failed: undefined operation");
 			}
 		}
 			
 		throw std::runtime_error("derivate failed: undefined");
+	};
+
+	// Performs calculation optimization by collecting trailing constants
+	// ex: x + 1 + 1 + 1 + 0 -> x + 3
+	func* optimize(func* f) {
+		if (f == nullptr)
+			throw std::runtime_error("optimize failed: nullptr");
+		
+		if (dynamic_cast<const_func*>(f))
+			return f->copy();
+		
+		if (dynamic_cast<name_func*>(f)) 
+			return f->copy();
+		
+		if (dynamic_cast<call_func*>(f)) {
+			call_func* t = dynamic_cast<call_func*>(f);
+			
+			std::vector<func*> opt_args(t->args.size());
+			
+			for (int i = 0; i < t->args.size(); ++i)
+				opt_args[i] = optimize(t->args[i]);
+			
+			return new call_func(t->name, opt_args);
+		}
+		
+		if (dynamic_cast<operator_func*>(f)) {
+			operator_func* t = dynamic_cast<operator_func*>(f);
+			
+			// a + b -> a' + b'
+			// a - b -> a' - b'
+			// a * b -> a' * b + a * b'
+			// a / b -> (a' * b - a * b') / b ^ 2
+			// a ^ b -> a' * b * a ^ (b - 1)
+			// -a -> -a'
+			// +a -> +a'
+			
+			if (operator_func::ADD <= t->opcode  && t->opcode <= operator_func::POW) {
+				func* a = optimize(t->left);
+				func* b = optimize(t->right);
+				
+				const_func* p;
+				const_func* q;
+				
+				if (a && b && (p = dynamic_cast<const_func*>(a)) && (q = dynamic_cast<const_func*>(b))) {
+					func* n;
+					
+					if (t->opcode == operator_func::ADD) n = new const_func(p->val + q->val);
+					if (t->opcode == operator_func::SUB) n = new const_func(p->val - q->val);
+					if (t->opcode == operator_func::MUL) n = new const_func(p->val * q->val);
+					if (t->opcode == operator_func::DIV) n = new const_func(p->val / q->val);
+					
+					delete a;
+					delete b;
+					
+					return n;
+				} else if (a && (p = dynamic_cast<const_func*>(a)) && p->val == 0) { // 0 * exp
+					delete a;
+					delete b;
+					return new const_func(0);
+				} else if (a && (p = dynamic_cast<const_func*>(a)) && p->val == 1) { // 1 * exp
+					delete a;
+					return b;
+				} else if (b && (q = dynamic_cast<const_func*>(b)) && q->val == 0) { // exp * 0
+					delete a;
+					delete b;
+					return new const_func(0);
+				} else if (b && (q = dynamic_cast<const_func*>(b)) && q->val == 1) { // exp * 1
+					delete b;
+					return a;
+				} else
+					return new operator_func(t->opcode, a, b);
+				
+			} else if (operator_func::POS <= t->opcode  && t->opcode <= operator_func::NEG) {
+				if (t->left && dynamic_cast<const_func*>(t->left))
+					return new const_func(t->opcode == operator_func::NEG ? -dynamic_cast<const_func*>(t->left)->val : dynamic_cast<const_func*>(t->left)->val);
+				else if (!t->left) {
+					throw std::runtime_error("optimize failed: nullptr");
+				} else {
+					func* n = optimize(t->left);
+					
+					if (dynamic_cast<const_func*>(n)) {
+						func* p = new const_func(t->opcode == operator_func::NEG ? -dynamic_cast<const_func*>(n)->val : dynamic_cast<const_func*>(n)->val);
+						delete n;
+						return p;
+					} else 
+						return t->opcode == operator_func::NEG ? neg(n) : n;
+				}
+			} else
+				throw std::runtime_error("optimize failed: undefined operation");
+		}
 	};
 };

@@ -6,7 +6,7 @@
 // clear && g++ -Iinclude -std=c++17 -w -g example/demo_derivative.cpp -o example/demo_derivative && ./example/demo_derivative
 
 int main() {
-	std::string str = "cos(x)^2";
+	std::string str = "sin(x)^8*cos(x^2)";
 	
 	math_func::func* funct = math_func::parse(str);
 	if (!funct) {
@@ -25,6 +25,14 @@ int main() {
 	std::cout << "Derivative:" << std::endl;
 	std::cout << *der << std::endl;
 	
+	// Optimize derivative
+	math_func::func* opt = math_func::optimize(der);
+	
+	// Print result
+	std::cout << "Optimized:" << std::endl;
+	std::cout << *opt << std::endl;
+	
+	delete opt;
 	delete der;
 	delete funct;
 	

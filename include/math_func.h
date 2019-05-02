@@ -26,11 +26,24 @@ namespace math_func {
 		
 		friend std::ostream& operator<<(std::ostream& os, const func& f);
 		
+		friend std::ostream& operator<<(std::ostream& os, const func*& f);
+		
 		virtual func* copy() = 0;
+		
+		virtual void print(int ident = 0) = 0;
 	};
 	
 	std::ostream& operator<<(std::ostream& os, const func& f) {
 		f.print(os);
+		
+		return os;
+	};
+	
+	std::ostream& operator<<(std::ostream& os, const func*& f) {
+		if (!f)
+			return os;
+		
+		f->print(os);
 		
 		return os;
 	};
@@ -40,9 +53,9 @@ namespace math_func {
 		static const int SUB = 1;
 		static const int MUL = 2;
 		static const int DIV = 3;
-		static const int POS = 4;
-		static const int NEG = 5;
-		static const int POW = 6;
+		static const int POW = 4;
+		static const int POS = 5;
+		static const int NEG = 6;
 		
 		func* left = nullptr;
 		func* right = nullptr;
@@ -68,19 +81,74 @@ namespace math_func {
 		};
 		
 		void print(std::ostream& os) const {
-			switch(opcode) {
-				case ADD: os << *left << " + " << *right; break;
-				case SUB: os << *left << " - " << *right; break;
-				case MUL: os << *left << " * " << *right; break;
-				case DIV: os << *left << " / " << *right; break;
-				case POW: os << *left << " ^ (" << *right << ')'; break;
-				case POS: os << *left;                    break;
-				case NEG: os << "-(" << *left << ')';     break;
+			if (ADD <= opcode && opcode <= POW) {
+				std::cout << '(';
+				if (left) 
+					left->print(os);
+				else 
+					os << "nullptr";
+			
+				switch(opcode) {
+					case ADD: os << " + "; break;
+					case SUB: os << " - "; break;
+					case MUL: os << " * "; break;
+					case DIV: os << " / "; break;
+					case POW: os << " ^ "; break;
+				}
+				
+				if (right) 
+					right->print(os);
+				else 
+					os << "nullptr";
+				std::cout << ')';
+			} else if (POS <= opcode && opcode <= NEG) {
+				switch(opcode) {
+					case POS: os << '+'; break;
+					case NEG: os << '-'; break;
+				}
+				
+				std::cout << '(';
+				if (left) 
+					left->print(os);
+				else 
+					os << "nullptr";
+				std::cout << ')';
 			}
 		};
 		
 		func* copy() {
-			return new operator_func(opcode, left, right);
+			return new operator_func(opcode, left ? left->copy() : nullptr, right ? right->copy() : nullptr);
+		};
+		
+		void print(int ident = 0) {
+			std::cout << std::string(ident, ' ');
+			
+			switch(opcode) {
+				case ADD: std::cout << '+' << std::endl; break;
+				case SUB: std::cout << '-' << std::endl; break;
+				case MUL: std::cout << '*' << std::endl; break;
+				case DIV: std::cout << '/' << std::endl; break;
+				case POW: std::cout << '^' << std::endl; break;
+				case POS: std::cout << '+' << std::endl; break;
+				case NEG: std::cout << '-' << std::endl; break;
+			}
+			
+			if (ADD <= opcode  && opcode <= POW) {
+				if (left) 
+					left->print(ident + 1);
+				else 
+					std::cout << std::string(ident + 1, ' ') << "nullptr" << std::endl;
+				
+				if (right) 
+					right->print(ident + 1);
+				else 
+					std::cout << std::string(ident + 1, ' ') << "nullptr" << std::endl;
+			} else if (POS <= opcode && opcode <= NEG) {
+				if (left) 
+					left->print(ident + 1);
+				else 
+					std::cout << std::string(ident + 1, ' ') << "nullptr" << std::endl;
+			}
 		};
 	};
 	
@@ -107,6 +175,10 @@ namespace math_func {
 		func* copy() {
 			return new name_func(name);
 		};
+		
+		void print(int ident = 0) {
+			std::cout << std::string(ident, ' ') << name << std::endl;
+		};
 	};
 	
 	struct const_func : public func {		
@@ -126,6 +198,10 @@ namespace math_func {
 		
 		func* copy() {
 			return new const_func(val);
+		};
+		
+		void print(int ident = 0) {
+			std::cout << std::string(ident, ' ') << val << std::endl;
 		};
 	};
 	
@@ -157,7 +233,11 @@ namespace math_func {
 		void print(std::ostream& os) const {
 			os << name << '(';
 			for (int i = 0; i < args.size(); ++i) {
-				os << *args[i];
+				if (args[i])
+					args[i]->print(os);
+				else
+					os << "nullptr";
+				
 				if (i != args.size() - 1)
 					os << ", ";
 			}
@@ -174,6 +254,16 @@ namespace math_func {
 		
 		func* copy() {			
 			return new call_func(name, copy_args());
+		};
+		
+		void print(int ident = 0) {
+			std::cout << std::string(ident, ' ') << name << " =>";
+			
+			for (int i = 0; i < args.size(); ++i) 
+				if (args[i]) 
+					args[i]->print(ident + 1);
+				else 
+					std::cout << std::string(ident + 1, ' ') << "nullptr" << std::endl;
 		};
 	};
 	
