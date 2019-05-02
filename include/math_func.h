@@ -17,6 +17,7 @@
 
 namespace math_func {
 	struct func {
+		
 		virtual ~func() {};
 		
 		// Should evaluate the function and retuan result
@@ -184,7 +185,7 @@ namespace math_func {
 	struct const_func : public func {		
 		double val;
 		
-		const_func(double _val) : val(_val) {};
+		const_func(double _val = 0) : val(_val) {};
 		
 		~const_func() {};
 		

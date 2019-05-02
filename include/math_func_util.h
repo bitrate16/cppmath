@@ -155,15 +155,7 @@ namespace math_func {
 		if (dynamic_cast<operator_func*>(f)) {
 			operator_func* t = dynamic_cast<operator_func*>(f);
 			
-			// a + b -> a' + b'
-			// a - b -> a' - b'
-			// a * b -> a' * b + a * b'
-			// a / b -> (a' * b - a * b') / b ^ 2
-			// a ^ b -> a' * b * a ^ (b - 1)
-			// -a -> -a'
-			// +a -> +a'
-			
-			if (operator_func::ADD <= t->opcode  && t->opcode <= operator_func::POW) {
+			if (operator_func::ADD <= t->opcode && t->opcode <= operator_func::POW) {
 				func* a = optimize(t->left);
 				func* b = optimize(t->right);
 				
@@ -177,6 +169,7 @@ namespace math_func {
 					if (t->opcode == operator_func::SUB) n = new const_func(p->val - q->val);
 					if (t->opcode == operator_func::MUL) n = new const_func(p->val * q->val);
 					if (t->opcode == operator_func::DIV) n = new const_func(p->val / q->val);
+					if (t->opcode == operator_func::POW) n = new const_func(std::pow(p->val, q->val));
 					
 					delete a;
 					delete b;
@@ -256,5 +249,7 @@ namespace math_func {
 			} else
 				throw std::runtime_error("optimize failed: undefined operation");
 		}
+		
+		throw std::runtime_error("optimize failed: undefined func");
 	};
 };
