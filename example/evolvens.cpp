@@ -35,19 +35,19 @@ using namespace math_func;
 #define KEY_ESCAPE 9
 #define KEY_R      27
 
-// Evolute visualisation using spaint tool.
+// Evolvens visualisation using spaint tool.
 
-// bash c.sh "-lX11" example/evolute
+// bash c.sh "-lX11" example/evolvens
 
 
 class scene : public component {
 	
 	void create() {
 		get_paint().init_font();
-		get_window().set_title("Evolute example");
+		get_window().set_title("Evolvens example");
 		
-		std::string str_x = "width / 2 + (width / 8) * cos(t) ^ 3";
-		std::string str_y = "height / 2 + (height / 8) * sin(t) ^ 3";
+		std::string str_x = "width / 2 + (width / 16) * cos(t)";
+		std::string str_y = "height / 2 + (height / 16) * sin(t)";
 		
 		f_x = math_func::parse(str_x);
 		f_y = math_func::parse(str_y);
@@ -55,26 +55,32 @@ class scene : public component {
 		math_func::func* df_x = math_func::derivate(f_x, "t");
 		math_func::func* df_y = math_func::derivate(f_y, "t");
 		
-		math_func::func* df2_x = math_func::derivate(df_x, "t");
-		math_func::func* df2_y = math_func::derivate(df_y, "t");
-		
-		func* mult = 	div(sum(pow(df_x->copy(), 2),
-							sub(mul(df_x->copy(),
-								pow(df_y->copy(), 2)),
-									df2_y),
-								mul(df2_x,
-									df_y->copy())));
+		root =  pow(sum(pow(df_x->copy(), 2),
+						pow(df_y->copy(), 2)),
+					0.5);
 									
-		func* f = optimize(mult);
-		delete mult;
-		mult = f;
+		func* f = optimize(root);
+		delete root;
+		root = f;
 		
-		c_x = sub(f_x->copy(), mul(df_y, mult->copy()));
+		// integrating root function
+		math_func::func* integrator = math_func::parse("integrator(t)");
+		
+		c_x =   sub(f_x->copy(), 
+					div(mul(df_x,
+							integrator->copy()),
+						root->copy()));
+							
 		f = optimize(c_x);
 		delete c_x;
 		c_x = f;
 		
-		c_y = sum(f_y->copy(), mul(df_x, mult));
+		
+		c_y =   sub(f_y->copy(), 
+					div(mul(df_y,
+							integrator),
+						root->copy()));
+						
 		f = optimize(c_y);
 		delete c_y;
 		c_y = f;
@@ -90,6 +96,14 @@ class scene : public component {
 			return std::cos(args[0]);
 		};
 		
+		math_func::func*& root_cpy = root;
+		math_func::func_constants& values = this->values;
+		math_func::func_functions& functions = this->functions;
+		double start = this->start;
+		functions["integrator"] = [&root_cpy, &values, &functions, &start](const std::vector<double>& args) -> double {
+			return math_func::num_integrate(root_cpy, values, functions, "t", start, args[0], 1000);
+		};
+		
 		updated = 1;
 	};
 	
@@ -98,7 +112,11 @@ class scene : public component {
 		delete c_y;
 		delete f_x;
 		delete f_y;
+		delete root;
 	};
+	
+	// Root expression
+	func* root;
 	
 	// Vector-function
 	math_func::func* f_x;
@@ -113,7 +131,7 @@ class scene : public component {
 	math_func::func_functions functions;
 	
 	static constexpr double start = 0.0;
-	static constexpr double end   = 6.4;
+	static constexpr double end   = 3.141628 * 4.0;
 	static constexpr double step  = 0.01;
 	
 	// Evolute state
@@ -189,14 +207,13 @@ class scene : public component {
 			if (evol_t >= end) {
 				evol_t = step;
 				evol_color = !evol_color;
+			} else {			
+				values["t"] = evol_t;
+				vec2 point = vec2(c_x->evaluate(values, functions), c_y->evaluate(values, functions));
+				
+				p.line(evol_prev.x, evol_prev.y, point.x, point.y);
+				evol_prev = point;
 			}
-			
-			values["t"] = evol_t;
-			vec2 point = vec2(c_x->evaluate(values, functions), c_y->evaluate(values, functions));
-			
-			p.line(evol_prev.x, evol_prev.y, point.x, point.y);
-			evol_prev = point;
-			
 			usleep(10000);
 		}
 	};

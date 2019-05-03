@@ -16,12 +16,15 @@
 // atomic   ::= -<atomic>  | +<atomic> | <name>     | <name>({<add_exp>, }) | <number> | (<add_exp>) | <atomic> ^ <atomic>
 
 namespace math_func {
+	typedef std::map<std::string, double> func_constants;
+	typedef std::map<std::string, std::function<double(const std::vector<double>&)>> func_functions;
+	
 	struct func {
 		
 		virtual ~func() {};
 		
 		// Should evaluate the function and retuan result
-		virtual double evaluate(const std::map<std::string, double>& values, const std::map<std::string, std::function<double(const std::vector<double>&)>>& functions) = 0;
+		virtual double evaluate(const func_constants& values, const func_functions& functions) = 0;
 		
 		virtual void print(std::ostream& os) const = 0;
 		
@@ -69,7 +72,7 @@ namespace math_func {
 			if (right) delete right;
 		};
 		
-		double evaluate(const std::map<std::string, double>& values, const std::map<std::string, std::function<double(const std::vector<double>&)>>& functions) {
+		double evaluate(const func_constants& values, const func_functions& functions) {
 			switch(opcode) {
 				case ADD: return left->evaluate(values, functions) + right->evaluate(values, functions);
 				case SUB: return left->evaluate(values, functions) - right->evaluate(values, functions);
@@ -160,7 +163,7 @@ namespace math_func {
 		
 		~name_func() {};
 		
-		double evaluate(const std::map<std::string, double>& values, const std::map<std::string, std::function<double(const std::vector<double>&)>>& functions) {
+		double evaluate(const func_constants& values, const func_functions& functions) {
 			auto it = values.find(name);
 		
 			if (it == values.end())
@@ -189,7 +192,7 @@ namespace math_func {
 		
 		~const_func() {};
 		
-		double evaluate(const std::map<std::string, double>& values, const std::map<std::string, std::function<double(const std::vector<double>&)>>& functions) {
+		double evaluate(const func_constants& values, const func_functions& functions) {
 			return val;
 		};
 		
@@ -217,7 +220,7 @@ namespace math_func {
 				delete args[i];
 		};
 		
-		double evaluate(const std::map<std::string, double>& values, const std::map<std::string, std::function<double(const std::vector<double>&)>>& functions) {
+		double evaluate(const func_constants& values, const func_functions& functions) {
 			auto it = functions.find(name);
 		
 			if (it == functions.end())

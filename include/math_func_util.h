@@ -199,6 +199,16 @@ namespace math_func {
 						return new const_func(0);
 					} else
 						return new operator_func(t->opcode, a, b);
+				} else if (t->opcode == operator_func::POW) {
+					if (b && (q = dynamic_cast<const_func*>(b)) && q->val == 0) { // exp ^ 0
+						delete a;
+						delete b;
+						return new const_func(1);
+					} else if (b && (q = dynamic_cast<const_func*>(b)) && q->val == 1) { // exp ^ 1
+						delete b;
+						return a;
+					} else
+						return new operator_func(t->opcode, a, b);
 				} else if (t->opcode == operator_func::ADD) {
 					if (a && (p = dynamic_cast<const_func*>(a)) && p->val == 0) { // 0 + exp
 						delete a;
@@ -251,5 +261,34 @@ namespace math_func {
 		}
 		
 		throw std::runtime_error("optimize failed: undefined func");
+	};
+
+	// Numerical integration
+	// Passed values table is used for insertation of integration variable value.
+	double num_integrate(func* f, func_constants& values, const func_functions& functions, const std::string& varname, double a, double b, long iterations) {
+		if (!f)
+			throw std::runtime_error("integrate failed: nullptr");
+		
+		bool sign = 0;
+		if (b < a) {
+			sign = 1;
+			double tmp = a;
+			a = b;
+			b = tmp;
+		}
+		
+		double dt = (b - a) / static_cast<double>(iterations);
+		double integral = 0.0;
+		
+		if (dt == 0.0)
+			return 0.0;
+		
+		for (double t = a; t <= b + dt; t += dt) {
+			values[varname] = t;
+			integral += f->evaluate(values, functions);
+		}
+		integral *= dt;
+		
+		return sign ? -integral : integral;
 	};
 };
