@@ -66,7 +66,7 @@ class scene : public component {
 	// Render options
 	bool render_lines = 1;   // L
 	bool render_circles = 1; // C
-	bool render_indices = 1; // I
+	bool render_indices = 0; // I
 	
 	void resize() {
 		resized = 1;

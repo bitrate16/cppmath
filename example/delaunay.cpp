@@ -33,6 +33,7 @@ using namespace cppmath;
 #define KEY_ESCAPE  9
 #define KEY_R      27
 #define KEY_C      54
+#define KEY_I      31
 
 // Right turn visualisation using spaint tool.
 
@@ -45,7 +46,7 @@ class scene : public component {
 		get_window().set_title("Delaunay example");
 	};
 	
-	static const int POINTS_AMOUNT = 16;
+	static const int POINTS_AMOUNT = 32;
 	
 	// Keep all randomized points
 	std::vector<vec2> points;
@@ -57,7 +58,8 @@ class scene : public component {
 	
 	bool resized = 1;
 	
-	bool render_circles = 0;
+	bool render_circles = 0; // C
+	bool render_indices = 0; // I
 	
 	// Returns triangle cointaining passed point.
 	int get_triangle(const ivec2& v) {
@@ -107,6 +109,9 @@ class scene : public component {
 				resized = 1;
 			} else if (w.get_key_down() == KEY_C) {
 				render_circles = !render_circles;
+				resized = 1;
+			} else if (w.get_key_down() == KEY_I) {
+				render_indices = !render_indices;
 				resized = 1;
 			} 
 		
@@ -219,13 +224,14 @@ class scene : public component {
 							
 			p.color(0, 255, 255);
 			
-			for (int i = 0; i < points.size(); ++i) {
-				p.color(0, 255, 255);
-				p.point(points[i].x, points[i].y);
-				p.color(255, 255, 0);
-				string ind = to_string(i);
-				p.text(points[i].x, points[i].y, ind.c_str());
-			}
+			if (render_indices)
+				for (int i = 0; i < points.size(); ++i) {
+					p.color(0, 255, 255);
+					p.point(points[i].x, points[i].y);
+					p.color(255, 255, 0);
+					string ind = to_string(i);
+					p.text(points[i].x, points[i].y, ind.c_str());
+				}
 
 			resized = 0;
 		}

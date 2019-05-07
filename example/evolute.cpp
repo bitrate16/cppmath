@@ -59,8 +59,8 @@ class scene : public component {
 		math_func::func* df2_y = math_func::derivate(df_y, "t");
 		
 		func* mult = 	div(sum(pow(df_x->copy(), 2),
-							sub(mul(df_x->copy(),
 								pow(df_y->copy(), 2)),
+							sub(mul(df_x->copy(),
 									df2_y),
 								mul(df2_x,
 									df_y->copy())));
