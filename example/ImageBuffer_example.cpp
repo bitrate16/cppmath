@@ -28,8 +28,6 @@ using namespace spaint;
 #define KEY_ESCAPE 9
 #define KEY_R      27
 
-// Z-Buffer visualisation using spaint tool.
-
 // bash c.sh "-lX11" example/ImageBuffer_example
 
 
@@ -85,7 +83,7 @@ class scene : public component {
 			resized = 0;
 			updated = 0;
 			
-			p.clear();
+			//p.clear();
 			
 			if (mouse_down) {
 				int y = runner;

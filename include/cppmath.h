@@ -485,6 +485,67 @@ namespace cppmath {
 			
 			return inter % 2;
 		};
+	
+		double dot2(const vec2& a, const vec2& b) {
+			return a.x * b.x + a.y * b.y;
+		};
+	
+		double dot3(const vec3& a, const vec3& b) {
+			return a.x * b.x + a.y * b.y + a.z * b.z;
+		};
+		
+		double cross2(const vec2& a, const vec2& b) {
+			return a.x * b.y - a.y * b.x;
+		};
+	
+		vec3 cross3(const vec3& a, const vec3& b) {
+			return vec3(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
+		};
+		
+		vec3 rotateAroundVector(const vec3& v, const vec3& r, double angle) {
+			/*vec3 out;
+			double cosa = std::cos(angle);
+			double sina = std::sin(angle);
+			double cose = 1.0 - cosa;
+			
+			out.x = r.x * (r.x * v.x + r.y * v.y + r.z * v.z) * cose + v.x * cosa + (-r.z * v.y + r.y * v.z) * sina;
+			out.y = r.y * (r.x * v.x + r.y * v.y + r.z * v.z) * cose + v.y * cosa + (r.z * v.x - r.x * v.z) * sina;
+			out.z = r.z * (r.x * v.x + r.y * v.y + r.z * v.z) * cose + v.z * cosa + (-r.y * v.x + r.x * v.y) * sina;
+			
+			return out;*/
+			
+			/*double c = std::cos(angle);
+			double s = std::sin(angle);
+			double C = 1.0 - c;
+
+			double Q[3][3];
+			Q[0][0] = axe.x * axe.x * C + c;
+			Q[0][1] = axe.y * axe.x * C + axe.z * s;
+			Q[0][2] = axe.z * axe.x * C - axe.y * s;
+
+			Q[1][0] = axe.y * axe.x * C - axe.z * s;
+			Q[1][1] = axe.y * axe.y * C + c;
+			Q[1][2] = axe.z * axe.y * C + axe.x * s;
+
+			Q[2][0] = axe.x * axe.z * C + axe.y * s;
+			Q[2][1] = axe.z * axe.y * C - axe.x * s;
+			Q[2][2] = axe.z * axe.z * C + c;
+			
+			vec3 out;
+			
+			out.x = v.x * Q[0][0] + v.x * Q[0][1] + v.x * Q[0][2];
+			out.y = v.y * Q[1][0] + v.y * Q[1][1] + v.y * Q[1][2];
+			out.z = v.z * Q[2][0] + v.z * Q[2][1] + v.z * Q[2][2];
+			
+			return out;*/
+			
+			double cos_a = std::cos(angle);
+			double sin_a = std::sin(angle);
+			
+			vec3 rot = (v * cos_a) + (cross3(r, v) * sin_a) + (r * dot3(r, v)) * (1 - cos_a);
+			
+			return rot;
+		};
 	};
 };
 
