@@ -20,11 +20,21 @@
 
 #pragma once
 
+
+
+#include <iostream>
+
+
+
+
 #include <X11/Xlib.h>
+#include <X11/Xutil.h>
 #include <stdlib.h>
 #include <functional>
 #include <cstring>
 #include <exception>
+
+#include "Color.h"
 
 // Require $(pkg-config --cflags --libs x11) linking
 
@@ -84,6 +94,94 @@ namespace spaint {
 		virtual void loop() {};
 	};
 	
+	class ImageBuffer {
+		friend class painter;
+		
+		Display *display;
+		Window       win;
+		GC            gc;
+		XImage*    image;
+		int width, height;
+		char*        data;
+		XColor    current;
+		
+	public:
+		
+		ImageBuffer() {};
+	
+		inline int get_width() {
+			return width;
+		};
+	
+		inline int get_height() {
+			return height;
+		};
+	
+		// Draw current data to display
+		inline void put(int x, int y, int offset_x = 0, int offset_y = 0, int sub_x = 0, int sub_y = 0) {
+			XPutImage(display, win, gc, image, offset_x, offset_y, x, y, width - sub_x, height - sub_y);
+		};
+		
+		int set_color(const Color& color) {
+			current.flags = DoRed | DoGreen | DoBlue;
+			current.red   = color.r << 8;
+			current.green = color.g << 8;
+			current.blue  = color.b << 8;
+			Status rc = XAllocColor(display, DefaultColormap(display, DefaultScreen(display)), &current);
+			if (rc == 0)
+				return 0;
+			return 1;
+		};
+		
+		void fill() {
+			for (int x = 0; x < width; ++x)
+				for (int y = 0; y < height; ++y)
+					XPutPixel(image, x, y, current.pixel);
+		};
+		
+		void set_pixel_unsafe(int x, int y) {
+			XPutPixel(image, x, y, current.pixel);
+		};
+		
+		void set_pixel(int x, int y) {
+			if (x < 0 || x >= width || y < 0 || y >= height)
+				return;
+			
+			XPutPixel(image, x, y, current.pixel);
+		};
+		
+		Color get_pixel_unsafe(int x, int y) {			
+			Color result;
+			XColor color;
+			
+			color.pixel = XGetPixel(image, x, y);
+			XQueryColor(display, DefaultColormap(display, DefaultScreen(display)), &color);
+			
+			result.r = color.red;
+			result.g = color.green;
+			result.b = color.blue;
+			
+			return result;
+		};
+		
+		Color get_pixel(int x, int y) {
+			if (x < 0 || x >= width || y < 0 || y >= height)
+				return Color(0, 0, 0);
+			
+			Color result;
+			XColor color;
+			
+			color.pixel = XGetPixel(image, x, y);
+			XQueryColor(display, DefaultColormap(display, DefaultScreen(display)), &color);
+			
+			result.r = color.red;
+			result.g = color.green;
+			result.b = color.blue;
+			
+			return result;
+		};
+	};
+	
 	class painter {
 		friend class window;
 		
@@ -108,6 +206,32 @@ namespace spaint {
 				return 0;
 			XSetForeground(display, gc, current.pixel);
 			return 1;
+		};
+		
+		ImageBuffer createImageBuffer(int width, int height) {
+			int def_depth = DefaultDepth(display, DefaultScreen(display));
+			int bit_depth = def_depth >> 3;
+			
+			ImageBuffer ib;
+			char* data = (char*) malloc(32 * width * height);
+			if (!data)
+				throw std::runtime_error("can not allocate image data");
+			
+			ib.image   = XCreateImage(display, CopyFromParent, def_depth, XYPixmap, 0, data, width, height, 32, 0);
+			if (!ib.image)
+				throw std::runtime_error("failed creating ImageBuffer");
+			
+			ib.width   = width;
+			ib.height  = height;
+			ib.display = display;
+			ib.win     = win;
+			ib.gc      = gc;
+			
+			return ib;
+		};
+		
+		void destroyImageBuffer(ImageBuffer& ib) {
+			XDestroyImage(ib.image);
 		};
 		
 		inline void clear() {
@@ -293,6 +417,11 @@ namespace spaint {
 			XFlush(paint.display);
 			
 			comp->create();
+		};
+		
+		~window() {
+			XFreeGC(paint.display, paint.gc);
+			XCloseDisplay(paint.display);
 		};
 		
 		window& operator=(const window& w) {
