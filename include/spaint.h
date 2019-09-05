@@ -284,7 +284,7 @@ namespace spaint {
 			// Input
 			long eventMask = StructureNotifyMask;
 			eventMask |= ButtonPressMask | ButtonReleaseMask // Mouse
-			           | KeyPressMask      | KeyReleaseMask;
+			          | KeyPressMask     | KeyReleaseMask;
 			XSelectInput(paint.display, paint.win, eventMask);
 			
 			

@@ -27,19 +27,19 @@ namespace cppmath {
 		
 	public:
 	
-		int x, y;
+		long x, y;
 		
 		ivec2() { 
 			this->x = 0;
 			this->y = 0;
 		};
 		
-		ivec2(int x, int y) { 
+		ivec2(long x, long y) { 
 			this->x = x;
 			this->y = y;
 		};
 		
-		ivec2(int r) {
+		ivec2(long r) {
 			x = y = r;
 		};
 		
@@ -57,13 +57,13 @@ namespace cppmath {
 			y = v.y;
 		};
 		
-		ivec2& mul(int i) { 
+		ivec2& mul(long i) { 
 			x *= i;
 			y *= i;
 			return *this;
 		};
 		
-		ivec2& div(int i) { 
+		ivec2& div(long i) { 
 			x /= i;
 			y /= i;
 			return *this;
