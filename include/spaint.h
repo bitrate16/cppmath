@@ -208,6 +208,18 @@ namespace spaint {
 			return 1;
 		};
 		
+		inline bool color(const Color& c) {
+			current.flags = DoRed | DoGreen | DoBlue;
+			current.red = c.r << 8;
+			current.green = c.g << 8;
+			current.blue = c.b << 8;
+			Status rc = XAllocColor(display, cmap, &current);
+			if (rc == 0)
+				return 0;
+			XSetForeground(display, gc, current.pixel);
+			return 1;
+		};
+		
 		ImageBuffer createImageBuffer(int width, int height) {
 			int def_depth = DefaultDepth(display, DefaultScreen(display));
 			int bit_depth = def_depth >> 3;
