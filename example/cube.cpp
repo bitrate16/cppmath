@@ -83,7 +83,7 @@ class scene : public component {
 			B = math::rotateAroundVector(B, vec3::Y, angle2);
 			A = math::rotateAroundVector(A, vec3::Z, angle3);
 			B = math::rotateAroundVector(B, vec3::Z, angle3);
-			zbuf.line(A * cube_size + cube_center, B * cube_size + cube_center, Color::WHITE, Color::WHITE);
+			zbuf.line(A * cube_size + cube_center, B * cube_size + cube_center, Color::WHITE);
 		}
 	}
 	
@@ -133,7 +133,7 @@ class scene : public component {
 				B = math::rotateAroundVector(B, vec3::Z, angle * 3.0);
 				C = math::rotateAroundVector(C, vec3::Z, angle * 3.0);
 				Color& c = faces_color[i >> 1];
-				zbuf.triangle(A * cube_size + cube_center, B * cube_size + cube_center, C * cube_size + cube_center, c, c, c);
+				zbuf.triangle(A * cube_size + cube_center, B * cube_size + cube_center, C * cube_size + cube_center, c);
 			}*/
 			
 			draw_cube(vec3(0, 0, 0), angle, angle * 2.0, angle * 3.0);
