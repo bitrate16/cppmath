@@ -156,7 +156,7 @@ namespace spaint {
 			this->r += a.r;
 			this->g += a.g;
 			this->b += a.b;
-			this->z += a.z;
+			this->a += a.a;
 			this->normalize();
 			return *this;
 		};

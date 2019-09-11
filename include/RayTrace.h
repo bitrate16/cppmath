@@ -1,12 +1,13 @@
 #pragma once
 
-#inlude <vector>
+#include <cmath>
+#include <vector>
 #include <limits>
 
-#inlude "vec3.h"
-#inlude "Color.h"
+#include "vec3.h"
+#include "Color.h"
 
-namespace RayTrace {
+namespace raytrace {
 	
 	class ray {
 	
@@ -17,9 +18,9 @@ namespace RayTrace {
 		// Ray direction
 		cppmath::vec3 B;
 		
-		ray(const cppmath::vec3& origin, const cppmath::vec3& direction) A(origin), B(direction) {};
+		ray(const cppmath::vec3& origin, const cppmath::vec3& direction) : A(origin), B(direction) {};
 		
-		ray(const cppmath::vec3& direction) B(direction) {};
+		ray(const cppmath::vec3& direction) : B(direction) {};
 		
 		cppmath::vec3 point_at_parameter(double t) { return A + t * B; };
 		
@@ -101,7 +102,7 @@ namespace RayTrace {
 				// Collect hits on all objects
 				std::vector<TraceManifold> hits(objects.size());
 				for (int i = 0; i < objects.size(); ++i)
-					hits[i] = objects[i].hit(r);
+					hits[i] = objects[i]->hit(r);
 			
 				// XXX: Move to 1st loop
 				
@@ -110,7 +111,7 @@ namespace RayTrace {
 				for (int i = 0; i < hits.size(); ++i)
 					if (hits[i].distance >= 0.0 && hits[i].distance < distance_closest) {
 						closest = i;
-						closest_distance = hits[i].distance;
+						distance_closest = hits[i].distance;
 					}
 				
 				if (closest == -1)
@@ -124,19 +125,19 @@ namespace RayTrace {
 			hitm.reached = 1;
 			
 			// If object is emitting light in this point, apply light color with luminosity scale
-			Material closest_material = closest_object->material(closest_hit.location);
+			ObjectMaterial closest_material = closest_object->material(closest_hit.location);
 			if (closest_material.luminosity) {
 				hitm.color = closest_material.color;
 				hitm.color.scale(closest_material.luminosity);
 			}
 			
-			Color lightning;
+			spaint::Color lighting;
 			// Iterate over all objects and hit then a ray to get summary resulting color lighting on this object
-			Color surface_color = closest_material.color;
+			spaint::Color surface_color = closest_material.color;
 			surface_color.scale(closest_material.diffuse);
 			for (int i = 0; i < objects.size(); ++i) {
-				ray l(closest_hit.location, (objects[i].center() - closest_hit.location).norm());
-				TraceManifold trm = objects[i].hit(l);
+				ray l(closest_hit.location, (objects[i]->center() - closest_hit.location).norm());
+				TraceManifold trm = objects[i]->hit(l);
 				
 				if (!trm.hit)
 					continue;
@@ -144,7 +145,7 @@ namespace RayTrace {
 				// Check if there is no object that will overlap light source
 				bool overlap = 0;
 				for (int j = 0; j < objects.size() && i != j; ++j) {
-					TraceManifold trmo = objects[j].hit(l);
+					TraceManifold trmo = objects[j]->hit(l);
 					if (trmo.distance >= 0 && trmo.distance < trm.distance) {
 						overlap = 1;
 						break;
@@ -154,18 +155,20 @@ namespace RayTrace {
 				if (overlap)
 					continue;
 				
-				ObjectMateral tmat = objects[i].material(trm.location);
+				ObjectMaterial tmat = objects[i]->material(trm.location);
 				
 				// If object emmit light
 				if (tmat.luminosity > 0) {
-					Color lumine = tmat.color;
-					lumne.scale(tmat.luminosity);
-					Color minimapply = Color::min(lumine, surface_color);
+					spaint::Color lumine = tmat.color;
+					lumine.scale(tmat.luminosity);
+					spaint::Color minimapply = spaint::Color::min(lumine, surface_color);
 					
 					// Apply color affect on surface
 					lighting += minimapply;
 				}
 			}
+			
+			hitm.color += lighting;
 			
 			// Calculate refletions, refractions
 			
@@ -176,9 +179,17 @@ namespace RayTrace {
 	class RayTrace {
 		RayTraceScene scene;
 		
+		// Set by user
 		int width, height;
+		double fov;
 		
-		Color background;
+		// Additional optimisations
+		// Top-left angle position
+		double sx, sy;
+		// Step of the angle in x,y movement
+		double angle_step;
+		
+		spaint::Color background;
 		
 		//         depth
 		//    < - - - - - - >                                
@@ -201,13 +212,22 @@ namespace RayTrace {
 		
 	public:
 	
+		RayTrace() {};
+	
 		RayTrace(int width, int height, double fov) {
+			set(width, height, fov);
+		};
+		
+		void set(int width, int height, double fov) {
 			this->width = width;
 			this->height = height;
 			this->fov = fov;
+			this->angle_step = fov / (double) width;
+			this->sx = -fov / 2.0;
+			this->sy = -angle_step * (double) height / 2.0;
 		};
 		
-		inline Color& get_background() {
+		inline spaint::Color& get_background() {
 			return background;
 		};
 		
@@ -225,14 +245,7 @@ namespace RayTrace {
 		
 		// Returns hit color on projection to camera view.
 		// Automatically transforms x, y to coordinates & hits object
-		Color hitColorAt(int x, int y) {
-			double depth = (double) width / 2.0 * std::ctan(fov / 2.0);
-			// Step on x/y angles
-			double angle_step = fov / (double) width;
-			// Starting/ending angle coords
-			double ax = -fov / 2.0;
-			double ay = -angle_step * (double) height / 2.0;
-			
+		spaint::Color hitColorAt(int x, int y) {			
 			/*for (int x = 0; x < width; ++x) {
 				for (int y = 0; y < height; ++y) {
 					
@@ -247,14 +260,12 @@ namespace RayTrace {
 				ax += angle_step;
 			}*/
 			
-			ax += (double) x * angle_step;
-			ay += (double) y * angle_step;
+			cppmath::vec3 ray_direction(std::cos(sx + (double) x * angle_step), std::cos(sy + (double) y * angle_step), 1.0);
+			// Normalize
+			ray_direction.z = std::sqrt(1.0 - ray_direction.x * ray_direction.x - ray_direction.y * ray_direction.y);
 			
-			vec3 ray_direction(std::cos(ax), std::cos(ay), 1.0);
-			ray_direction.norm();
-			
-			ray r(vec3::Zero, ray_direction);
-			HitManifold hit = scene.hit(r);
+			ray r(cppmath::vec3::Zero, ray_direction);
+			HitManifold hit = scene.shoot(r);
 			
 			if (hit.reached)
 				return hit.color;

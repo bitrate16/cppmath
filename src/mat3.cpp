@@ -1,8 +1,10 @@
+#include <limits>
+
 #include "mat3.h"
 
 using namespace cppmath;
 
-mat3::mat3(double M11, double M11, double M13, double M21, double M21, double M23, double M31, double M31, double M32) {
+mat3::mat3(double M11, double M12, double M13, double M21, double M22, double M23, double M31, double M32, double M33) {
 	this->M11 = M11;
 	this->M21 = M21;
 	this->M31 = M31;
@@ -86,6 +88,33 @@ double& mat3::value(int x, int y) {
 	}
 };
 
+double mat3::get_value(int x, int y) const {
+	if (x == 1) {
+		if (y == 1)
+			return M11;
+		if (y == 2)
+			return M12;
+		if (y == 3)
+			return M13;
+	}
+	if (x == 2) {
+		if (y == 1)
+			return M21;
+		if (y == 2)
+			return M22;
+		if (y == 3)
+			return M23;
+	}
+	if (x == 3) {
+		if (y == 1)
+			return M31;
+		if (y == 2)
+			return M32;
+		if (y == 3)
+			return M33;
+	}
+};
+
 mat3 mat3::fromRows(cppmath::vec3 v1, cppmath::vec3 v2, cppmath::vec3 v3) {
 	return mat3(v1.x, v1.y, v1.z, v2.x, v2.y, v2.z, v3.x, v3.y, v3.z);
 };
@@ -95,15 +124,15 @@ mat3 mat3::fromCols(cppmath::vec3 v1, cppmath::vec3 v2, cppmath::vec3 v3) {
 };
 
 vec3 mat3::mul(mat3 m, vec3 v) {
-	return vec3(m.M11 * v.x + M12 * v.y + M13 * v.z,
-				m.M21 * v.x + M22 * v.y + M23 * v.z,
-				m.M31 * v.x + M32 * v.y + M33 * v.z);
+	return vec3(m.M11 * v.x + m.M12 * v.y + m.M13 * v.z,
+				m.M21 * v.x + m.M22 * v.y + m.M23 * v.z,
+				m.M31 * v.x + m.M32 * v.y + m.M33 * v.z);
 };
 
 vec3 mat3::mul(vec3 v, mat3 m) {
-	return vec3(m.M11 * v.x + M21 * v.y + M31 * v.z,
-				m.M12 * v.x + M22 * v.y + M32 * v.z,
-				m.M13 * v.x + M23 * v.y + M33 * v.z);
+	return vec3(m.M11 * v.x + m.M21 * v.y + m.M31 * v.z,
+				m.M12 * v.x + m.M22 * v.y + m.M32 * v.z,
+				m.M13 * v.x + m.M23 * v.y + m.M33 * v.z);
 };
 
 mat3 mat3::mul(const mat3& m) {
@@ -136,14 +165,14 @@ double mat3::det() {
 mat3 mat3::inv() {
 	double determ = det();
 	if (determ == 0.0) {
-		return met3(std::nan(""));
+		return mat3(std::numeric_limits<double>::quiet_NaN());
 	}
 	trans();
 	mul(1.0 / determ);
 };
 
 bool mat3::is_inv() {
-	return return det() != 0.0;
+	return det() != 0.0;
 };
 
 mat3 mat3::trans() {
@@ -195,7 +224,7 @@ mat3 mat3::operator*=(const mat3& b) {
 		for (int j = 1; j < 4; ++j) {
 			value(i, j) = 0;
 			for (int r = 1; r < 4; ++r)
-				value(i, j) += a.value(i, r) * b.value(r, j);
+				value(i, j) += a.get_value(i, r) * b.get_value(r, j);
 		}
 	return *this;
 };
@@ -213,18 +242,18 @@ mat3 mat3::operator-() {
 	return *this;
 };
 
-mat3 mat3::operator+(const mat3& a, const mat3& b) {
-	mat4 temp(a);
+mat3 operator+(const mat3& a, const mat3& b) {
+	mat3 temp(a);
 	return temp += b;
 };
 
-mat3 mat3::operator-(const mat3& a, const mat3& b) {
-	mat4 temp(a);
+mat3 operator-(const mat3& a, const mat3& b) {
+	mat3 temp(a);
 	return temp -= b;
 };
 
-mat3 mat3::operator*(const mat3& a, const mat3& b) {
-	mat4 temp(a);
+mat3 operator*(const mat3& a, const mat3& b) {
+	mat3 temp(a);
 	return temp *= b;
 };
 	

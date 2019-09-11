@@ -13,11 +13,11 @@ namespace cppmath {
 		// Out of bounds index
 		double M = 0.0;
 		
-		double M11, M11, M13;
-		double M21, M21, M23;
-		double M31, M31, M33;
+		double M11, M12, M13;
+		double M21, M22, M23;
+		double M31, M32, M33;
 		
-		mat3(double M11, double M11, double M13, double M21, double M21, double M23, double M31, double M31, double M32);
+		mat3(double M11, double M12, double M13, double M21, double M22, double M23, double M31, double M32, double M33);
 		
 		mat3(double m);
 		
@@ -26,6 +26,8 @@ namespace cppmath {
 		double& operator[](const int index);
 		
 		double& value(int x, int y);
+		
+		double get_value(int x, int y) const;
 		
 		static mat3 fromRows(cppmath::vec3 v1, cppmath::vec3 v2, cppmath::vec3 v3);
 		

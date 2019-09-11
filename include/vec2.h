@@ -84,7 +84,7 @@ namespace cppmath {
 		
 		static double dot(const vec2& a, const vec2& b);
 		
-		static vec2 cross(const vec2& a, const vec2& b);
+		static vec3 cross(const vec2& a, const vec2& b);
 		
 		/* Normalize the vector */
 		vec2 operator~();
