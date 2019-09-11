@@ -231,6 +231,10 @@ namespace raytrace {
 			return background;
 		};
 		
+		inline void set_background(const spaint::Color& c) {
+			background = c;
+		};
+		
 		inline int get_width() {
 			return width;
 		};
