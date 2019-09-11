@@ -29,6 +29,7 @@ using namespace cppmath;
 const vec3 vec3::X = vec3(1, 0, 0);
 const vec3 vec3::Y = vec3(0, 1, 0);
 const vec3 vec3::Z = vec3(0, 0, 1);	
+const vec3 vec3::Zero = vec3(0, 0, 0);	
 	
 
 vec3::vec3(const vec3 &o) {
@@ -150,6 +151,36 @@ double vec3::inv() {
 	return 1.0 / (x * x + y * y + z * z);
 }
 
+vec3 vec3::norm() {
+	vec3 v(*this);
+	double lent = len();
+	v.x /= lent;
+	v.y /= lent;
+	v.z /= lent;
+	
+	return v;
+}
+
+double vec3::dot(const vec3& a, const vec3& b) {
+	return a.x * b.x + a.y * b.y + a.z * b.z;
+};
+
+vec3 vec3::cross(const vec3& a, const vec3& b) {
+	return vec3(a.y * b.z - a.z * b.y, a.z * b.x - a.x * b.z, a.x * b.y - a.y * b.x);
+};
+
+vec3 vec3::reflect(const vec3& v, const vec3& normal) {
+	return v - 2.0 * vec3::dot(v, normal) * normal;
+};
+
+vec3 vec3::refract(const vec3& v, const vec3& normal, double eta) {
+	double ndv = ve3::dot(n, v);
+	double k = 1.0 - eta * eta * (1.0 - ndv * ndv);
+	if (k < 0.0)
+		return vec3::Zero;
+	else
+		return vec3(eta * v - (eta * ndv + std::sqrt(k)) * normal;
+};
 
 // C U S T O M _ O P E R A T O R S
 

@@ -28,6 +28,7 @@ namespace cppmath {
 		static const vec3 X;
 		static const vec3 Y;
 		static const vec3 Z;
+		static const vec3 Zero;
 		
 		double x;
 		double y;
@@ -76,6 +77,33 @@ namespace cppmath {
 		double len2();
 		
 		double inv();
+
+		vec3 norm();
+		
+		static double dot(const vec3& a, const vec3& b);
+		
+		static vec3 cross(const vec3& a, const vec3& b);
+		
+		// Calculate refrection of a vector to a normal vector
+		// \    |    *  
+		//  \v  |n  /out
+		//   \  |  /    
+		//    \ | /     
+		//     *|/      
+		static vec3 reflect(const vec3& v, const vec3& normal);
+		
+		// Calculate refraction of a vector to a normal vector
+		// \    |        
+		//  \v  |n       
+		//   \  |        
+		//    \ |        
+		//     *|        
+		//      |\       
+		//      |  \     
+		//      |    \out
+		//      |      \ 
+		//      |       *
+		static vec3 refract(const vec3& v, const vec3& normal, double eta);
 		
 		/* Normalize the vector */
 		vec3 operator~();

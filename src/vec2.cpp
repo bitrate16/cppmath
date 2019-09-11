@@ -28,6 +28,7 @@ using namespace cppmath;
 
 const vec2 vec2::X = vec2(1, 0);
 const vec2 vec2::Y = vec2(0, 1);	
+const vec2 vec2::Zero = vec2(0, 0);	
 	
 
 vec2::vec2(const vec2 &o) {
@@ -144,6 +145,22 @@ double vec2::tan() {
 	return x / y;
 }
 
+vec2 vec2::norm() {
+	vec2 v(*this);
+	double lent = len();
+	v.x /= lent;
+	v.y /= lent;
+	
+	return v;
+}
+
+double vec2::dot(const vec2& a, const vec2& b) {
+	return a.x * b.x + a.y * b.y;
+};
+
+vec3 vec2::cross(const vec2& a, const vec2& b) {
+	return vec3(0, 0, a.x * b.y - b.x * a.y);
+};
 
 // C U S T O M _ O P E R A T O R S
 

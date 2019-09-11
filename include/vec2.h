@@ -29,6 +29,7 @@ namespace cppmath {
 		
 		static const vec2 X;
 		static const vec2 Y;
+		static const vec2 Zero;
 		
 		double x;
 		double y;
@@ -76,8 +77,14 @@ namespace cppmath {
 		double len2();
 		
 		double inv();
+
+		vec2 norm();
 		
 		double tan();
+		
+		static double dot(const vec2& a, const vec2& b);
+		
+		static vec2 cross(const vec2& a, const vec2& b);
 		
 		/* Normalize the vector */
 		vec2 operator~();

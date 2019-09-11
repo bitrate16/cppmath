@@ -77,6 +77,14 @@ namespace spaint {
 			a = a < 0 ? 0 : (a > 255 ? 255 : a);
 		};
 		
+		void scale(double f) {
+			r *= f;
+			g *= f;
+			b *= f;
+			a *= f;
+			normalize();
+		};
+		
 		// Interpolate between two colors
 		static Color interpolate(const Color& a, const Color& b, double t) {
 			Color c;
@@ -114,6 +122,24 @@ namespace spaint {
 			return e;
 		};
 		
+		static Color max(const Color& a, const Color& b) {
+			Color e;
+			e.r = std::max(a.r, b.r);
+			e.g = std::max(a.g, b.g);
+			e.b = std::max(a.b, b.b);
+			e.a = std::max(a.a, b.a);
+			return e;
+		};
+		
+		static Color min(const Color& a, const Color& b) {
+			Color e;
+			e.r = std::min(a.r, b.r);
+			e.g = std::min(a.g, b.g);
+			e.b = std::min(a.b, b.b);
+			e.a = std::min(a.a, b.a);
+			return e;
+		};
+		
 		int& operator[](const int chrome) {
 			int chrome_ = chrome & 0b11;
 			if (chrome_ == 0)
@@ -124,6 +150,15 @@ namespace spaint {
 				return b;
 			if (chrome_ == 3)
 				return a;
+		};
+		
+		Color operator+=(const Color& a) {
+			this->r += a.r;
+			this->g += a.g;
+			this->b += a.b;
+			this->z += a.z;
+			this->normalize();
+			return *this;
 		};
 	};
 		
