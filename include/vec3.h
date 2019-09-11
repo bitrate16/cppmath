@@ -105,6 +105,8 @@ namespace cppmath {
 		//      |       *
 		static vec3 refract(const vec3& v, const vec3& normal, double eta);
 		
+		static vec3 from_direction_cosines(double ax, double ay, double az);
+		
 		/* Normalize the vector */
 		vec3 operator~();
 	

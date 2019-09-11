@@ -182,6 +182,10 @@ vec3 vec3::refract(const vec3& v, const vec3& normal, double eta) {
 		return vec3(eta * v - (eta * ndv + std::sqrt(k)) * normal;
 };
 
+vec3 vec3::from_direction_cosines(double ax, double ay, double az) {
+	return vec3(std::cos(ax), std::cos(ay), std::cos(az)).norm();
+};
+
 // C U S T O M _ O P E R A T O R S
 
 /* Normalize the vector */
