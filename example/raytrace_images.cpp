@@ -24,6 +24,7 @@ using namespace std;
 //  scene and outputs to images in "output" directory
 
 // bash c.sh "-lX11" example/raytrace_images
+// ffmpeg -r 60 -f image2 -s 250x250 -start_number 0 -i frame_%01d.png -vframes 1000 -vcodec libx264 -crf 0  -pix_fmt yuv420p test.mp4
 
 RayTrace rt;
 
