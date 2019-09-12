@@ -62,12 +62,38 @@ namespace spaint {
 			return c;
 		};
 		
+		static Color fromABGR(int argb) {
+			Color c;
+			c.a = (argb >> 24) & 0xFF;
+			c.b = (argb >> 16) & 0xFF;
+			c.g = (argb >>  8) & 0xFF;
+			c.r = (argb >>  0) & 0xFF;
+			return c;
+		};
+		
+		static Color fromRGBA(int rgba) {
+			Color c;
+			c.r = (rgba >> 24) & 0xFF;
+			c.g = (rgba >> 16) & 0xFF;
+			c.b = (rgba >>  8) & 0xFF;
+			c.a = (rgba >>  0) & 0xFF;
+			return c;
+		};
+		
 		int rgb() {
 			return (r << 16) | (g << 8) | (b << 0);
 		};
 		
 		int argb() {
 			return (a << 24) | (r << 16) | (g << 8) | (b << 0);
+		};
+		
+		int abgr() {
+			return (a << 24) | (b << 16) | (g << 8) | (r << 0);
+		};
+		
+		int rgba() {
+			return  (r << 24) | (g << 16) | (b << 8) | (a << 0);
 		};
 		
 		void normalize() {

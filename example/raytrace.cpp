@@ -28,7 +28,7 @@ using namespace raytrace;
 #define KEY_ESCAPE 9
 #define KEY_R      27
 
-// bash c.sh "-lX11" src/raytrace
+// bash c.sh "-lX11" example/raytrace
 
 
 class scene : public component {
@@ -55,6 +55,11 @@ class scene : public component {
 		light_sphere->material.color = Color::WHITE;
 		light_sphere->material.luminosity = 1.0;
 		rt.get_scene().addObject(light_sphere);
+		
+		Sphere* white_sphere = new Sphere(vec3(0, 0, 100), 10);
+		white_sphere->material.color = Color::WHITE;
+		white_sphere->material.reflect = 1.0;
+		rt.get_scene().addObject(white_sphere);
 	};
 	
 	void destroy() {

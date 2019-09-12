@@ -14,6 +14,7 @@ namespace raytrace {
 	
 	public:
 		
+		double power = 0.0;
 		// Ray origin
 		cppmath::vec3 A;
 		// Ray direction
@@ -56,9 +57,11 @@ namespace raytrace {
 		// 0 : transparent
 		double opacity = 1.0;
 		// 0 : no reflection
-		double reflect = 1.0;
-		// 0 : no refration
+		double reflect = 0.0;
+		// 0 : no refraction
 		double refract = 0.0;
+		// refraction coefficient
+		double refract_val = 0.0;
 		// 0 : no diffuse color on light
 		double diffuse = 1.0;
 		// 0 : no light emission
@@ -78,7 +81,7 @@ namespace raytrace {
 	
 	class Sphere : public SceneObject {
 		
-		public:
+	public:
 		
 		double radius;
 		cppmath::vec3 center;
@@ -98,7 +101,6 @@ namespace raytrace {
 		};
 		
 		TraceManifold hit(const ray& r) {
-			//std::cout << r << std::endl;
 			cppmath::vec3 oc = r.origin() - center;
 			double a = cppmath::vec3::dot(r.direction(), r.direction());
 			double b = 2.0 * cppmath::vec3::dot(oc, r.direction());
@@ -147,6 +149,8 @@ namespace raytrace {
 		std::vector<SceneObject*> objects;
 		
 	public:
+
+		double MIN_RAY_POWER = 10e-3;
 	
 		~RayTraceScene() {
 			for (int i = 0; i < objects.size(); ++i)
@@ -160,34 +164,43 @@ namespace raytrace {
 		};
 		
 		// Shoot ray into scene to probe color
-		HitManifold shoot(const ray& r) {
+		HitManifold shoot(const ray& r, int ignored_id = -1) {
+			// ignored_id is used during reflection calculations to 
+			//  avoid object trace itself forever till stack overflow.
+			
+			if (r.power < MIN_RAY_POWER)
+				return HitManifold();
 			
 			// Find closest hit
 			TraceManifold closest_hit;
 			SceneObject* closest_object;
 			int closest = -1;
-			{ 
-				// Collect hits on all objects
-				std::vector<TraceManifold> hits(objects.size());
-				for (int i = 0; i < objects.size(); ++i)
+			// Collect hits on all objects
+			std::vector<TraceManifold> hits(objects.size());
+			for (int i = 0; i < objects.size(); ++i)
+				if (i == ignored_id)
+					continue;
+				else
 					hits[i] = objects[i]->hit(r);
+				
+		
+			// XXX: Move to 1st loop
 			
-				// XXX: Move to 1st loop
-				
-				int distance_closest = std::numeric_limits<double>::max();
-				for (int i = 0; i < hits.size(); ++i) {
-					if (hits[i].hit && hits[i].distance >= 0.0 && hits[i].distance < distance_closest) {
-						closest = i;
-						distance_closest = hits[i].distance;
-					}
+			int distance_closest = std::numeric_limits<double>::max();
+			for (int i = 0; i < hits.size(); ++i) {
+				if (i == ignored_id)
+					continue;
+				else if (hits[i].hit && hits[i].distance >= 0.0 && hits[i].distance < distance_closest) {
+					closest = i;
+					distance_closest = hits[i].distance;
 				}
-				
-				if (closest == -1)
-					return { 0, spaint::Color::BLACK };
-				
-				closest_hit = hits[closest];
-				closest_object = objects[closest];
 			}
+			
+			if (closest == -1)
+				return { 0, spaint::Color::BLACK };
+			
+			closest_hit = hits[closest];
+			closest_object = objects[closest];
 			
 			HitManifold hitm;
 			hitm.hit = 1;
@@ -204,49 +217,63 @@ namespace raytrace {
 			// Iterate over all objects and hit then a ray to get summary resulting color lighting on this object
 			spaint::Color surface_color = closest_material.color;
 			surface_color.scale(closest_material.diffuse);
-			for (int i = 0; i < objects.size(); ++i) {
-				if (i == closest)
-					continue;
-				
-				ray l(closest_hit.location, (objects[i]->get_center() - closest_hit.location).norm());
-				TraceManifold trm = objects[i]->hit(l);
-				
-				if (!trm.hit)
-					continue;
-				
-				// Check if there is no object that will overlap light source
-				bool overlap = 0;
-				for (int j = 0; j < objects.size(); ++j) {
-					if (i == j || j == closest)
+			if (closest_material.diffuse > 0) {
+				for (int i = 0; i < objects.size(); ++i) {
+					if (i == closest)
 						continue;
 					
-					TraceManifold trmo = objects[j]->hit(l);
-					if (trmo.hit && trmo.distance >= 0 && trmo.distance < trm.distance) {
-						overlap = 1;
-						break;
+					ray l(closest_hit.location, (objects[i]->get_center() - closest_hit.location).norm());
+					TraceManifold trm = objects[i]->hit(l);
+					
+					if (!trm.hit)
+						continue;
+					
+					// Check if there is no object that will overlap light source
+					bool overlap = 0;
+					for (int j = 0; j < objects.size(); ++j) {
+						if (i == j || j == closest)
+							continue;
+						
+						TraceManifold trmo = objects[j]->hit(l);
+						if (trmo.hit && trmo.distance >= 0 && trmo.distance < trm.distance) {
+							overlap = 1;
+							break;
+						}
+					}
+					
+					if (overlap)
+						continue;
+					
+					ObjectMaterial tmat = objects[i]->get_material(trm.location);
+					
+					// If object emmit light
+					if (tmat.luminosity > 0) {
+						spaint::Color lumine = tmat.color;
+						lumine.scale(tmat.luminosity);
+						lumine.scale(-cppmath::vec3::cos_between(closest_hit.normal, trm.normal));
+						spaint::Color minimapply = spaint::Color::min(lumine, surface_color);
+						
+						// Apply color affect on surface
+						lighting += minimapply;
 					}
 				}
+			}
+			
+			if (closest_material.reflect > 0) {
+				ray l(closest_hit.location, cppmath::vec3::reflect(r.direction(), closest_hit.normal));
+				l.power = r.power * closest_material.reflect;
 				
-				if (overlap)
-					continue;
-				
-				ObjectMaterial tmat = objects[i]->get_material(trm.location);
-				
-				// If object emmit light
-				if (tmat.luminosity > 0) {
-					spaint::Color lumine = tmat.color;
-					lumine.scale(tmat.luminosity);
-					lumine.scale(-cppmath::vec3::cos_between(closest_hit.normal, trm.normal));
-					spaint::Color minimapply = spaint::Color::min(lumine, surface_color);
-					
-					// Apply color affect on surface
-					lighting += minimapply;
+				HitManifold hitr = shoot(l, closest);
+				if (hitr.hit) {
+					hitr.color.scale(closest_material.reflect);
+					hitm.color += hitr.color;
 				}
 			}
 			
 			hitm.color += lighting;
+			hitm.color.scale(r.power);
 			
-			// Calculate refletions, refractions
+			// Calculate refletions
 			
 			return hitm;
 		};
@@ -356,46 +383,23 @@ namespace raytrace {
 		// Returns hit color on projection to camera view.
 		// Automatically transforms x, y to coordinates & hits object
 		spaint::Color hitColorAt(int x, int y) {			
-			/*for (int x = 0; x < width; ++x) {
-				for (int y = 0; y < height; ++y) {
-					
-					vec3 ray_direction(std::cos(ax), std::cos(ay), 1.0);
-					ray_direction.norm();
-					
-					ray r(vec3::Zero, ray_direction);
-					HitManifold hit = scene.hit(r);
-					
-					ay += angle_step;
-				}
-				ax += angle_step;
-			}*/
-			
-			//double d = 1.0 / std::tan(fov / 2.0);
 		
 			cppmath::vec3 ray_direction;
 			
 			if (camera.flatProjection) {
 				ray_direction = cppmath::vec3((camera.width / 2 - x) / (double) camera.width, (camera.height / 2 - y) / (double) camera.height, 1.0).norm();
 				ray_direction.norm();
+			} else {
+				
+				// Deprecated
+				
+				/*double angle_step = fov / (double) width;
+				ray_direction = (std::tan(sx + (double) x * angle_step), std::tan(sy + (double) y * angle_step), 1.0);
+				ray_direction.z = std::sqrt(1.0 - ray_direction.x * ray_direction.x - ray_direction.y * ray_direction.y);*/
 			}
-			/*ray_direction.x += 0.5;
-			ray_direction.y += 0.5;
-			double aspect = (double) width / (double) height;
-			ray_direction.x = aspect * (2.0 * ray_direction.x / (double) width) - 1.0;
-			ray_direction.y = (2.0 * ray_direction.y / (double) height) - 1.0;
-			ray_direction.z = 1.0;*/
-			//ray_direction.norm();
-//			cppmath::vec3::Z
-//					+ cppmath::vec3::X * std::tan(fov/2.0) * (((x + 0.5)/width)*2.0 - 1.0)
-//					+ cppmath::vec3::Y * std::tan(fov/2.0) * (1.0 - ((y + 0.5f)/height)*2.0);
-//;
-			
-			//double angle_step = fov / (double) width;
-			//ray_direction=(std::tan(sx + (double) x * angle_step), std::tan(sy + (double) y * angle_step), 1.0);
-			// Normalize
-			//ray_direction.z = std::sqrt(1.0 - ray_direction.x * ray_direction.x - ray_direction.y * ray_direction.y);
 			
 			ray r(cppmath::vec3::Zero, ray_direction);
+			r.power = 1.0;
 			HitManifold hit = scene.shoot(r);
 			
 			if (hit.hit)
