@@ -163,12 +163,14 @@ double mat3::det() {
 };
 
 mat3 mat3::inv() {
+	/*
 	double determ = det();
 	if (determ == 0.0) {
 		return mat3(std::numeric_limits<double>::quiet_NaN());
 	}
-	trans();
+	trans(); // 2x2 minors
 	mul(1.0 / determ);
+	*/
 };
 
 bool mat3::is_inv() {
@@ -255,6 +257,46 @@ mat3 operator-(const mat3& a, const mat3& b) {
 mat3 operator*(const mat3& a, const mat3& b) {
 	mat3 temp(a);
 	return temp *= b;
+};
+
+bool operator==(const mat3& a, const mat3& b) {
+	return  a.M11 == b.M11
+			&&
+			a.M12 == b.M12
+			&&
+			a.M13 == b.M13
+			&&
+			a.M21 == b.M21
+			&&
+			a.M22 == b.M22
+			&&
+			a.M23 == b.M23
+			&&
+			a.M31 == b.M31
+			&&
+			a.M32 == b.M32
+			&&
+			a.M33 == b.M33;
+};
+
+bool operator!=(const mat3& a, const mat3& b) {
+	return  a.M11 != b.M11
+			||
+			a.M12 != b.M12
+			||
+			a.M13 != b.M13
+			||
+			a.M21 != b.M21
+			||
+			a.M22 != b.M22
+			||
+			a.M23 != b.M23
+			||
+			a.M31 != b.M31
+			||
+			a.M32 != b.M32
+			||
+			a.M33 != b.M33;
 };
 	
 	

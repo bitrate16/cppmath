@@ -167,6 +167,26 @@ namespace spaint {
 		c.normalize();
 		return c;
 	};
+		
+	bool operator==(const Color& a, const Color& b) {
+		return  a.r == b.r
+				&&
+				a.g == b.g
+				&&
+				a.b == b.b
+				&&
+				a.a == b.a;
+	};
+		
+	bool operator!=(const Color& a, const Color& b) {
+		return  a.r != b.r
+				||
+				a.g != b.g
+				||
+				a.b != b.b
+				||
+				a.a != b.a;
+	};
 	
 	Color Color::RED     = Color(255, 0  , 0  );
 	Color Color::YELLOW  = Color(255, 255, 0  );

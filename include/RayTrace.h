@@ -3,6 +3,7 @@
 #include <cmath>
 #include <vector>
 #include <limits>
+#include <iostream>
 
 #include "vec3.h"
 #include "Color.h"
@@ -22,21 +23,26 @@ namespace raytrace {
 		
 		ray(const cppmath::vec3& direction) : B(direction) {};
 		
-		cppmath::vec3 point_at_parameter(double t) { return A + t * B; };
+		cppmath::vec3 point_at_parameter(double t) const { return A + t * B; };
 		
-		cppmath::vec3 origin() {
+		cppmath::vec3 origin() const {
 			return A;
 		};
 		
-		cppmath::vec3 direction() {
+		cppmath::vec3 direction() const {
 			return B;
 		};
 	};
+		
+	std::ostream& operator<<(std::ostream& os, const ray& r) {
+		os << '[' << r.A << " --> " << r.B << ']';
+		return os;
+	}
 	
 	// Keeps information about ray hitting an object
 	struct TraceManifold {
 		// Has hit an object
-		bool hit;
+		bool hit = 0.0;
 		// Distance to a hit point from ray.origin()
 		double distance;
 		// Hit point location
@@ -63,16 +69,71 @@ namespace raytrace {
 		
 	public:
 		
-		virtual TraceManifold hit(const ray& r);
+		virtual TraceManifold hit(const ray& r) { return TraceManifold(); };
 		
-		virtual ObjectMaterial material(const cppmath::vec3& point);
+		virtual ObjectMaterial get_material(const cppmath::vec3& point) { return ObjectMaterial(); };
 		
-		virtual cppmath::vec3 center();
+		virtual cppmath::vec3 get_center() { return cppmath::vec3(); };
+	};
+	
+	class Sphere : public SceneObject {
+		
+		public:
+		
+		double radius;
+		cppmath::vec3 center;
+		ObjectMaterial material;
+		
+		Sphere(const cppmath::vec3& center, double radius) {
+			set(center, radius);
+		};
+		
+		void set(const cppmath::vec3& center, double radius) {
+			this->center = center;
+			this->radius = radius;
+		};
+		
+		void setMaterial(const ObjectMaterial& material) {
+			this->material = material;
+		};
+		
+		TraceManifold hit(const ray& r) {
+			//std::cout << r << std::endl;
+			cppmath::vec3 oc = r.origin() - center;
+			double a = cppmath::vec3::dot(r.direction(), r.direction());
+			double b = 2.0 * cppmath::vec3::dot(oc, r.direction());
+			double c = cppmath::vec3::dot(oc, oc) - radius * radius;
+			double discriminant = b * b - 4.0 * a * c;
+			if (discriminant < 0) {
+				return TraceManifold();
+			} else {
+				TraceManifold tman;
+				tman.distance = (-b - std::sqrt(discriminant)) / (2.0 * a);
+				if (tman.distance < 0) {
+					tman.distance = (-b + std::sqrt(discriminant)) / (2.0 * a);
+					if (tman.distance < 0)
+						return tman;
+				}
+				
+				tman.hit = 1;
+				tman.location = r.point_at_parameter(tman.distance);
+				tman.normal = (tman.location - center).norm();
+				return tman;
+			}
+		};
+		
+		ObjectMaterial get_material(const cppmath::vec3& point) {
+			return material;
+		};
+		
+		cppmath::vec3 get_center() {
+			return center;
+		};
 	};
 	
 	struct HitManifold {
 		// Set to 1 if something was hit, 0 else
-		bool reached = 0;
+		bool hit = 0;
 		// Summary hit color
 		spaint::Color color;
 	};
@@ -82,9 +143,15 @@ namespace raytrace {
 	private:
 		
 		// Set of object on the scene
+		// Deleted automatically after destroy
 		std::vector<SceneObject*> objects;
 		
 	public:
+	
+		~RayTraceScene() {
+			for (int i = 0; i < objects.size(); ++i)
+				delete objects[i];
+		};
 		
 		// Add object to list of scene objects, check for NULL
 		void addObject(SceneObject* o) {
@@ -98,6 +165,7 @@ namespace raytrace {
 			// Find closest hit
 			TraceManifold closest_hit;
 			SceneObject* closest_object;
+			int closest = -1;
 			{ 
 				// Collect hits on all objects
 				std::vector<TraceManifold> hits(objects.size());
@@ -106,13 +174,13 @@ namespace raytrace {
 			
 				// XXX: Move to 1st loop
 				
-				int closest = -1;
 				int distance_closest = std::numeric_limits<double>::max();
-				for (int i = 0; i < hits.size(); ++i)
-					if (hits[i].distance >= 0.0 && hits[i].distance < distance_closest) {
+				for (int i = 0; i < hits.size(); ++i) {
+					if (hits[i].hit && hits[i].distance >= 0.0 && hits[i].distance < distance_closest) {
 						closest = i;
 						distance_closest = hits[i].distance;
 					}
+				}
 				
 				if (closest == -1)
 					return { 0, spaint::Color::BLACK };
@@ -122,13 +190,14 @@ namespace raytrace {
 			}
 			
 			HitManifold hitm;
-			hitm.reached = 1;
+			hitm.hit = 1;
 			
 			// If object is emitting light in this point, apply light color with luminosity scale
-			ObjectMaterial closest_material = closest_object->material(closest_hit.location);
+			ObjectMaterial closest_material = closest_object->get_material(closest_hit.location);
 			if (closest_material.luminosity) {
 				hitm.color = closest_material.color;
 				hitm.color.scale(closest_material.luminosity);
+				hitm.color.scale(-cppmath::vec3::cos_between(closest_hit.normal, r.direction()));
 			}
 			
 			spaint::Color lighting;
@@ -136,7 +205,10 @@ namespace raytrace {
 			spaint::Color surface_color = closest_material.color;
 			surface_color.scale(closest_material.diffuse);
 			for (int i = 0; i < objects.size(); ++i) {
-				ray l(closest_hit.location, (objects[i]->center() - closest_hit.location).norm());
+				if (i == closest)
+					continue;
+				
+				ray l(closest_hit.location, (objects[i]->get_center() - closest_hit.location).norm());
 				TraceManifold trm = objects[i]->hit(l);
 				
 				if (!trm.hit)
@@ -144,9 +216,12 @@ namespace raytrace {
 				
 				// Check if there is no object that will overlap light source
 				bool overlap = 0;
-				for (int j = 0; j < objects.size() && i != j; ++j) {
+				for (int j = 0; j < objects.size(); ++j) {
+					if (i == j || j == closest)
+						continue;
+					
 					TraceManifold trmo = objects[j]->hit(l);
-					if (trmo.distance >= 0 && trmo.distance < trm.distance) {
+					if (trmo.hit && trmo.distance >= 0 && trmo.distance < trm.distance) {
 						overlap = 1;
 						break;
 					}
@@ -155,12 +230,13 @@ namespace raytrace {
 				if (overlap)
 					continue;
 				
-				ObjectMaterial tmat = objects[i]->material(trm.location);
+				ObjectMaterial tmat = objects[i]->get_material(trm.location);
 				
 				// If object emmit light
 				if (tmat.luminosity > 0) {
 					spaint::Color lumine = tmat.color;
 					lumine.scale(tmat.luminosity);
+					lumine.scale(-cppmath::vec3::cos_between(closest_hit.normal, trm.normal));
 					spaint::Color minimapply = spaint::Color::min(lumine, surface_color);
 					
 					// Apply color affect on surface
@@ -176,19 +252,52 @@ namespace raytrace {
 		};
 	};
 	
+	struct Camera {
+	
+	public:
+		
+		// Viewport resolution
+		int width, height;
+		// Fov in sphere screen projection
+		double fov;
+		// Z value in flat screen projection
+		double zDistance;
+		// Used for constructing ray coords for flat screen.
+		bool flatProjection;
+	
+		Camera() {};
+		
+		Camera(int width, int height) {
+			this->width          = width;
+			this->height         = height;
+			this->fov            = 0;
+			this->zDistance      = 1.0;
+			this->flatProjection = 1;
+		};
+		
+		Camera(int width, int height, double fov) {
+			this->width          = width;
+			this->height         = height;
+			this->fov            = fov * (3.14159265358979323846 / 180.0);
+			this->zDistance      = 1.0;
+			this->flatProjection = 0;
+		};
+		
+		void set_fov(double fov) {
+			this->fov = fov * (3.14159265358979323846 / 180.0);
+			this->flatProjection = 0;
+		};
+		
+		void set_zdistance(double zDistance) {
+			this->zDistance = zDistance;
+			this->flatProjection = 1;
+		};
+	};
+	
 	class RayTrace {
 		RayTraceScene scene;
 		
-		// Set by user
-		int width, height;
-		double fov;
-		
-		// Additional optimisations
-		// Top-left angle position
-		double sx, sy;
-		// Step of the angle in x,y movement
-		double angle_step;
-		
+		// Color returned when no hit on any object
 		spaint::Color background;
 		
 		//         depth
@@ -212,19 +321,12 @@ namespace raytrace {
 		
 	public:
 	
+		Camera camera;
+	
 		RayTrace() {};
 	
-		RayTrace(int width, int height, double fov) {
-			set(width, height, fov);
-		};
-		
-		void set(int width, int height, double fov) {
-			this->width = width;
-			this->height = height;
-			this->fov = fov;
-			this->angle_step = fov / (double) width;
-			this->sx = -fov / 2.0;
-			this->sy = -angle_step * (double) height / 2.0;
+		RayTrace(const Camera& camera) {
+			this->camera = camera;
 		};
 		
 		inline spaint::Color& get_background() {
@@ -236,11 +338,15 @@ namespace raytrace {
 		};
 		
 		inline int get_width() {
-			return width;
+			return camera.width;
 		};
 		
 		inline int get_height() {
-			return height;
+			return camera.height;
+		};
+		
+		inline Camera& get_camera() {
+			return camera;
 		};
 		
 		inline RayTraceScene& get_scene() {
@@ -264,14 +370,35 @@ namespace raytrace {
 				ax += angle_step;
 			}*/
 			
-			cppmath::vec3 ray_direction(std::cos(sx + (double) x * angle_step), std::cos(sy + (double) y * angle_step), 1.0);
+			//double d = 1.0 / std::tan(fov / 2.0);
+		
+			cppmath::vec3 ray_direction;
+			
+			if (camera.flatProjection) {
+				ray_direction = cppmath::vec3((camera.width / 2 - x) / (double) camera.width, (camera.height / 2 - y) / (double) camera.height, 1.0).norm();
+				ray_direction.norm();
+			}
+			/*ray_direction.x += 0.5;
+			ray_direction.y += 0.5;
+			double aspect = (double) width / (double) height;
+			ray_direction.x = aspect * (2.0 * ray_direction.x / (double) width) - 1.0;
+			ray_direction.y = (2.0 * ray_direction.y / (double) height) - 1.0;
+			ray_direction.z = 1.0;*/
+			//ray_direction.norm();
+//			cppmath::vec3::Z
+//					+ cppmath::vec3::X * std::tan(fov/2.0) * (((x + 0.5)/width)*2.0 - 1.0)
+//					+ cppmath::vec3::Y * std::tan(fov/2.0) * (1.0 - ((y + 0.5f)/height)*2.0);
+//;
+			
+			//double angle_step = fov / (double) width;
+			//ray_direction=(std::tan(sx + (double) x * angle_step), std::tan(sy + (double) y * angle_step), 1.0);
 			// Normalize
-			ray_direction.z = std::sqrt(1.0 - ray_direction.x * ray_direction.x - ray_direction.y * ray_direction.y);
+			//ray_direction.z = std::sqrt(1.0 - ray_direction.x * ray_direction.x - ray_direction.y * ray_direction.y);
 			
 			ray r(cppmath::vec3::Zero, ray_direction);
 			HitManifold hit = scene.shoot(r);
 			
-			if (hit.reached)
+			if (hit.hit)
 				return hit.color;
 			return get_background();
 		};

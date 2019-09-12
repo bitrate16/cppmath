@@ -64,6 +64,8 @@ namespace cppmath {
 	mat3 operator+(const mat3& a, const mat3& b);
 	mat3 operator-(const mat3& a, const mat3& b);
 	mat3 operator*(const mat3& a, const mat3& b);
+	bool operator==(const mat3& a, const mat3& b);
+	bool operator!=(const mat3& a, const mat3& b);
 	
 	mat3 mat3::Zero = mat3(1, 1, 1, 1, 1, 1, 1, 1, 0);;
 	mat3 mat3::Unit = mat3(1, 1, 1, 1, 1, 1, 1, 1, 1);

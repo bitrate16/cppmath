@@ -139,15 +139,15 @@ vec3 vec3::vmul(const vec3 &v) {
 		
 // [[ M A T H ]]
 
-double vec3::len() {
+double vec3::len() const {
 	return sqrt(x * x + y * y + z * z);
 }
 
-double vec3::len2() {
+double vec3::len2() const {
 	return x * x + y * y + z * z;
 }
 
-double vec3::inv() {
+double vec3::inv() const {
 	return 1.0 / (x * x + y * y + z * z);
 }
 
@@ -184,6 +184,13 @@ vec3 vec3::refract(const vec3& v, const vec3& normal, double eta) {
 
 vec3 vec3::from_direction_cosines(double ax, double ay, double az) {
 	return vec3(std::cos(ax), std::cos(ay), std::cos(az)).norm();
+};
+
+double vec3::cos_between(const vec3& a, const vec3& b) {
+	double len = a.len() * b.len();
+	if (len == 0)
+		return 0;
+	return dot(a, b) / len;
 };
 
 // C U S T O M _ O P E R A T O R S

@@ -72,11 +72,11 @@ namespace cppmath {
 		
 		// [[ M A T H ]]
 		
-		double len();
+		double len() const;
 		
-		double len2();
+		double len2() const;
 		
-		double inv();
+		double inv() const;
 
 		vec3 norm();
 		
@@ -106,6 +106,8 @@ namespace cppmath {
 		static vec3 refract(const vec3& v, const vec3& normal, double eta);
 		
 		static vec3 from_direction_cosines(double ax, double ay, double az);
+		
+		static double cos_between(const vec3& a, const vec3& b);
 		
 		/* Normalize the vector */
 		vec3 operator~();

@@ -22,6 +22,7 @@
 #include "RayTrace.h"
 
 using namespace spaint;
+using namespace cppmath;
 using namespace raytrace;
 
 #define KEY_ESCAPE 9
@@ -37,7 +38,23 @@ class scene : public component {
 		get_window().set_title("RayTrace example");
 		
 		updated = 1;
-		rt.set(250, 250, 45);
+		rt.camera = Camera(250, 250);
+		rt.set_background(Color::BLACK);
+		
+		Sphere* red_sphere = new Sphere(vec3(20, 20, 100), 5);
+		red_sphere->material.color = Color::RED;
+		red_sphere->material.luminosity = 0.0;
+		rt.get_scene().addObject(red_sphere);
+		
+		Sphere* green_sphere = new Sphere(vec3(20, -20, 100), 5);
+		green_sphere->material.color = Color::GREEN;
+		green_sphere->material.luminosity = 0.0;
+		rt.get_scene().addObject(green_sphere);
+		
+		Sphere* light_sphere = new Sphere(vec3(0, 20, 80), 5);
+		light_sphere->material.color = Color::WHITE;
+		light_sphere->material.luminosity = 1.0;
+		rt.get_scene().addObject(light_sphere);
 	};
 	
 	void destroy() {
@@ -79,6 +96,16 @@ class scene : public component {
 			
 			resized = 0;
 			updated = 0;
+			
+			for (int x = 0; x < rt.get_width(); ++x)
+				for (int y = 0; y < rt.get_height(); ++y) {
+					Color frag = rt.hitColorAt(x, y);
+					if (frag != Color::BLACK) {
+						p.color(frag);
+						p.point(x, y);
+					}
+				}
+				std::cout << "DONE\n";
 			
 		} else {
 			// ...

@@ -129,19 +129,19 @@ vec3 vec2::vmul(const vec2 &v) {
 		
 // [[ M A T H ]]
 
-double vec2::len() {
+double vec2::len() const {
 	return sqrt(x * x + y * y);
 }
 
-double vec2::len2() {
+double vec2::len2() const {
 	return x * x + y * y;
 }
 
-double vec2::inv() {
+double vec2::inv() const {
 	return 1.0 / (x * x + y * y);
 }
 
-double vec2::tan() {
+double vec2::tan() const {
 	return x / y;
 }
 
@@ -160,6 +160,13 @@ double vec2::dot(const vec2& a, const vec2& b) {
 
 vec3 vec2::cross(const vec2& a, const vec2& b) {
 	return vec3(0, 0, a.x * b.y - b.x * a.y);
+};
+
+double vec2::cos_between(const vec2& a, const vec2& b) {
+	double len = a.len() * b.len();
+	if (len == 0)
+		return 0;
+	return dot(a, b) / len;
 };
 
 // C U S T O M _ O P E R A T O R S

@@ -72,19 +72,21 @@ namespace cppmath {
 		
 		// [[ M A T H ]]
 		
-		double len();
+		double len() const;
 		
-		double len2();
+		double len2() const;
 		
-		double inv();
+		double inv() const;
 
 		vec2 norm();
 		
-		double tan();
+		double tan() const;
 		
 		static double dot(const vec2& a, const vec2& b);
 		
 		static vec3 cross(const vec2& a, const vec2& b);
+		
+		static double cos_between(const vec2& a, const vec2& b);
 		
 		/* Normalize the vector */
 		vec2 operator~();
