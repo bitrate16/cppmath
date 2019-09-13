@@ -174,12 +174,17 @@ vec3 vec3::reflect(const vec3& v, const vec3& normal) {
 };
 
 vec3 vec3::refract(const vec3& v, const vec3& normal, double eta) {
+	eta = 2.0f - eta;
+    double cosv = dot(normal, v);
+    return (v * eta - normal * (-cosv + eta * cosv));
+    /*
 	double ndv = vec3::dot(normal, v);
 	double k = 1.0 - eta * eta * (1.0 - ndv * ndv);
 	if (k < 0.0)
 		return vec3::Zero;
 	else
 		return eta * v - (eta * ndv + std::sqrt(k)) * normal;
+	*/
 };
 
 vec3 vec3::from_direction_cosines(double ax, double ay, double az) {

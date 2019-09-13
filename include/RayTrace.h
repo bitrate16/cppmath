@@ -133,6 +133,146 @@ namespace raytrace {
 		};
 	};
 	
+	class Triangle : public SceneObject {
+		
+	public:
+		cppmath::vec3 center;
+		cppmath::vec3 A, B, C;
+		ObjectMaterial material;
+		
+		Triangle(const cppmath::vec3& a, const cppmath::vec3& b, const cppmath::vec3& c) {
+			set(a, b, c);
+		};
+		
+		void set(const cppmath::vec3& a, const cppmath::vec3& b, const cppmath::vec3& c) {
+			A = a;
+			B = b;
+			C = c;
+			center = (A + B + C) / 3.0;
+		};
+		
+		void setMaterial(const ObjectMaterial& material) {
+			this->material = material;
+		};
+		
+		TraceManifold hit(const ray& r) {
+			cppmath::vec3 ab = B - A;
+			cppmath::vec3 ac = C - A;
+			
+			// Caculate normal to plane
+			TraceManifold tm;
+			tm.normal = cppmath::vec3::cross(ab, ac).norm();
+			
+			double ndd = cppmath::vec3::dot(tm.normal, r.direction());
+			
+			// No hit, parallel
+			if (std::abs(ndd) <= std::numeric_limits<double>::epsilon())
+				return tm;
+			
+			double d = cppmath::vec3::dot(tm.normal, A);
+			tm.distance = (cppmath::vec3::dot(tm.normal, r.origin()) + d) / ndd;
+			
+			if (tm.distance < 0)
+				return tm;
+			
+			tm.location = r.point_at_parameter(tm.distance);
+			
+			cppmath::vec3 Ct;
+			//std::cout << "PRE FRAG " << tm.location << std::endl;
+			
+			cppmath::vec3 edge0 = B - A;
+			cppmath::vec3 vp0 = tm.location - A;
+			Ct = cppmath::vec3::cross(edge0, vp0);
+			
+			// On the right side
+			if (cppmath::vec3::dot(tm.normal, Ct) < 0)
+				return tm;
+			//std::cout << "PRE FRAG1 " << tm.location << std::endl;
+			
+			cppmath::vec3 edge1 = C - B;
+			cppmath::vec3 vp1 = tm.location - B;
+			Ct = cppmath::vec3::cross(edge0, vp1);
+			
+			// On the right side
+			if (cppmath::vec3::dot(tm.normal, Ct) < 0)
+				return tm;
+			//std::cout << "PRE FRAG2 " << tm.location << std::endl;
+			
+			cppmath::vec3 edge2 = A - C;
+			cppmath::vec3 vp2 = tm.location - C;
+			Ct = cppmath::vec3::cross(edge0, vp2);
+			
+			// On the right side
+			if (cppmath::vec3::dot(tm.normal, Ct) < 0)
+				return tm;
+			//std::cout << "PRE FRAG3 " << tm.location << std::endl;
+			//std::cout << "FRAG" << std::endl;
+			tm.hit = 1;
+			return tm;
+		};
+		
+		ObjectMaterial get_material(const cppmath::vec3& point) {
+			return material;
+		};
+		
+		cppmath::vec3 get_center() {
+			return center;
+		};
+	};
+	
+	
+	class Plane : public SceneObject {
+		
+	public:
+		cppmath::vec3 location;
+		cppmath::vec3 normal;
+		ObjectMaterial material;
+		
+		Plane(const cppmath::vec3& location, const cppmath::vec3& normal) {
+			set(location, normal);
+		};
+		
+		void set(const cppmath::vec3& location, const cppmath::vec3& normal) {
+			this->location = location;
+			this->normal = normal;
+			this->normal.norm();
+		};
+		
+		void setMaterial(const ObjectMaterial& material) {
+			this->material = material;
+		};
+		
+		TraceManifold hit(const ray& r) {
+			// Caculate normal to plane
+			TraceManifold tm;
+			tm.normal = normal;
+			
+			double ndd = cppmath::vec3::dot(tm.normal, r.direction());
+			
+			// No hit, parallel
+			if (std::abs(ndd) <= 10e-4)
+				return tm;
+			
+			tm.distance = cppmath::vec3::dot(tm.normal, location - r.origin()) / ndd;
+			
+			if (tm.distance < 10e-4)
+				return tm;
+			
+			tm.location = r.point_at_parameter(tm.distance);
+			tm.hit = 1;
+			
+			return tm;
+		};
+		
+		ObjectMaterial get_material(const cppmath::vec3& point) {
+			return material;
+		};
+		
+		cppmath::vec3 get_center() {
+			return location;
+		};
+	};
+	
 	struct HitManifold {
 		// Set to 1 if something was hit, 0 else
 		bool hit = 0;
@@ -228,7 +368,7 @@ namespace raytrace {
 					if (!trm.hit)
 						continue;
 					
-					// Check if there is no object that will overlap light source
+					/*// Check if there is no object that will overlap light source
 					bool overlap = 0;
 					for (int j = 0; j < objects.size(); ++j) {
 						if (i == j || j == closest)
@@ -242,7 +382,7 @@ namespace raytrace {
 					}
 					
 					if (overlap)
-						continue;
+						continue;*/
 					
 					ObjectMaterial tmat = objects[i]->get_material(trm.location);
 					
@@ -252,6 +392,24 @@ namespace raytrace {
 						lumine.scale(tmat.luminosity);
 						lumine.scale(-cppmath::vec3::cos_between(closest_hit.normal, trm.normal));
 						spaint::Color minimapply = spaint::Color::min(lumine, surface_color);
+					
+						// Check for all overlapping objects & scale light 
+						//  by cos between ray to object and ray to light
+						// i.e.: Iterate over all objects and calculate total shadow value in shadow.
+						double shadow_cos = 1.0;
+						for (int j = 0; j < objects.size(); ++j) {
+							if (i == j || j == closest)
+								continue;
+							
+							TraceManifold trmo = objects[j]->hit(l);
+							if (trmo.hit && trmo.distance >= 0 && trmo.distance < trm.distance) {
+								ObjectMaterial mato = objects[i]->get_material(trmo.location);
+								double cs = abs(cppmath::vec3::cos_between(l.direction(), (trmo.normal).norm()) * (1.0 - mato.refract) / 2.0);
+								shadow_cos -= cs;
+							}
+						}
+						shadow_cos = shadow_cos < 0 ? 0.0 : (shadow_cos > 1.0 ? 1.0 : shadow_cos);
+						minimapply.scale(shadow_cos);
 						
 						// Apply color affect on surface
 						lighting += minimapply;
@@ -259,6 +417,10 @@ namespace raytrace {
 				}
 			}
 			
+			hitm.color += lighting;
+			hitm.color.scale(r.power);
+			
+			// Calculate reflections
 			if (closest_material.reflect > 0) {
 				ray l(closest_hit.location, cppmath::vec3::reflect(r.direction(), closest_hit.normal));
 				l.power = r.power * closest_material.reflect;
@@ -270,10 +432,18 @@ namespace raytrace {
 				}
 			}
 			
-			hitm.color += lighting;
-			hitm.color.scale(r.power);
+			// Calculate refractions
+			if (closest_material.refract > 0) {
+				ray l(closest_hit.location, cppmath::vec3::refract(r.direction(), closest_hit.normal, closest_material.refract_val));
+				l.power = r.power * closest_material.refract;
+				
+				HitManifold hitr = shoot(l, closest);
+				if (hitr.hit) {
+					hitr.color.scale(closest_material.refract);
+					hitm.color += hitr.color;
+				}
+			}
 			
-			// Calculate refletions
 			
 			return hitm;
 		};
