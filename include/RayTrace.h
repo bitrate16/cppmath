@@ -111,9 +111,9 @@ namespace raytrace {
 			} else {
 				TraceManifold tman;
 				tman.distance = (-b - std::sqrt(discriminant)) / (2.0 * a);
-				if (tman.distance < 0) {
+				if (tman.distance < 10e-8) {
 					tman.distance = (-b + std::sqrt(discriminant)) / (2.0 * a);
-					if (tman.distance < 0)
+					if (tman.distance < 10e-8)
 						return tman;
 				}
 				
@@ -250,12 +250,12 @@ namespace raytrace {
 			double ndd = cppmath::vec3::dot(tm.normal, r.direction());
 			
 			// No hit, parallel
-			if (std::abs(ndd) <= 10e-4)
+			if (std::abs(ndd) <= 10e-8)
 				return tm;
 			
 			tm.distance = cppmath::vec3::dot(tm.normal, location - r.origin()) / ndd;
 			
-			if (tm.distance < 10e-4)
+			if (tm.distance < 10e-8)
 				return tm;
 			
 			tm.location = r.point_at_parameter(tm.distance);
@@ -290,6 +290,9 @@ namespace raytrace {
 		
 	public:
 
+		// Diffuse scale for light in shadow of an object
+		double shadow_diffuse = 0.5;
+		// Minimal ray power to keep running
 		double MIN_RAY_POWER = 10e-3;
 	
 		~RayTraceScene() {
@@ -330,7 +333,7 @@ namespace raytrace {
 			for (int i = 0; i < hits.size(); ++i) {
 				if (i == ignored_id)
 					continue;
-				else if (hits[i].hit && hits[i].distance >= 0.0 && hits[i].distance < distance_closest) {
+				else if (hits[i].hit && hits[i].distance >= 10e-8 && hits[i].distance - distance_closest < 10e-8) {
 					closest = i;
 					distance_closest = hits[i].distance;
 				}
@@ -353,6 +356,7 @@ namespace raytrace {
 				hitm.color.scale(-cppmath::vec3::cos_between(closest_hit.normal, r.direction()));
 			}
 			
+			// Calculate ambient lighting from light emitting objects
 			spaint::Color lighting;
 			// Iterate over all objects and hit then a ray to get summary resulting color lighting on this object
 			spaint::Color surface_color = closest_material.color;
@@ -368,7 +372,8 @@ namespace raytrace {
 					if (!trm.hit)
 						continue;
 					
-					/*// Check if there is no object that will overlap light source
+					/*
+					// Check if there is no object that will overlap light source
 					bool overlap = 0;
 					for (int j = 0; j < objects.size(); ++j) {
 						if (i == j || j == closest)
@@ -382,7 +387,8 @@ namespace raytrace {
 					}
 					
 					if (overlap)
-						continue;*/
+						continue;
+					*/
 					
 					ObjectMaterial tmat = objects[i]->get_material(trm.location);
 					
@@ -404,7 +410,7 @@ namespace raytrace {
 							TraceManifold trmo = objects[j]->hit(l);
 							if (trmo.hit && trmo.distance >= 0 && trmo.distance < trm.distance) {
 								ObjectMaterial mato = objects[i]->get_material(trmo.location);
-								double cs = abs(cppmath::vec3::cos_between(l.direction(), (trmo.normal).norm()) * (1.0 - mato.refract) / 2.0);
+								double cs = abs(cppmath::vec3::cos_between(l.direction(), (trmo.normal).norm()) * (1.0 - mato.refract) * shadow_diffuse);
 								shadow_cos -= cs;
 							}
 						}
@@ -444,7 +450,6 @@ namespace raytrace {
 				}
 			}
 			
-			
 			return hitm;
 		};
 	};
@@ -461,6 +466,8 @@ namespace raytrace {
 		double zDistance;
 		// Used for constructing ray coords for flat screen.
 		bool flatProjection;
+	
+		cppmath::vec3 location;
 	
 		Camera() {};
 		
@@ -568,7 +575,7 @@ namespace raytrace {
 				ray_direction.z = std::sqrt(1.0 - ray_direction.x * ray_direction.x - ray_direction.y * ray_direction.y);*/
 			}
 			
-			ray r(cppmath::vec3::Zero, ray_direction);
+			ray r(camera.location, ray_direction);
 			r.power = 1.0;
 			HitManifold hit = scene.shoot(r);
 			

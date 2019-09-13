@@ -28,9 +28,10 @@ using namespace raytrace;
 #define KEY_ESCAPE 9
 #define KEY_R      27
 
-#define WIDTH 250
-#define HEIGHT 250
-#define SCALE 1
+#define WIDTH 100
+#define HEIGHT 100
+#define SCALE 0.4
+#define PIXEL_SCALE 2
 
 // bash c.sh "-lX11" example/raytrace
 
@@ -162,17 +163,22 @@ class scene : public component {
 			resized = 0;
 			updated = 0;
 			
+			std::cout << "RENDERING\n";
 			
 			for (int x = 0; x < rt.get_width(); ++x)
 				for (int y = 0; y < rt.get_height(); ++y) {
 					Color frag = rt.hitColorAt(x, y);
 					if (frag != Color::BLACK) {
 						p.color(frag);
-						p.point(x, y);
+						for (int sx = 0; sx < PIXEL_SCALE; ++sx)
+							for (int sy = 0; sy < PIXEL_SCALE; ++sy)
+								p.point(x * PIXEL_SCALE + sx, y * PIXEL_SCALE + sy);
 					}
 				}
+				
 				std::cout << "DONE\n";
 				
+				rt.camera.location.z += 1.0;
 				
 		} else if (mouse_down) {
 			window::pointer point = w.get_pointer();
@@ -190,7 +196,7 @@ class scene : public component {
 
 int main() {
 	scene s;
-	window w(&s, WIDTH, HEIGHT, 0);
+	window w(&s, WIDTH * PIXEL_SCALE, HEIGHT * PIXEL_SCALE, 0);
 	w.start();
 	return 0;
 };
