@@ -4,6 +4,7 @@
 #include <vector>
 #include <limits>
 #include <iostream>
+#include <functional>
 
 #include "vec3.h"
 #include "Color.h"
@@ -133,6 +134,7 @@ namespace raytrace {
 		};
 	};
 	
+	/*
 	class Triangle : public SceneObject {
 		
 	public:
@@ -166,13 +168,12 @@ namespace raytrace {
 			double ndd = cppmath::vec3::dot(tm.normal, r.direction());
 			
 			// No hit, parallel
-			if (std::abs(ndd) <= std::numeric_limits<double>::epsilon())
+			if (std::abs(ndd) <= 10e-8)
 				return tm;
 			
-			double d = cppmath::vec3::dot(tm.normal, A);
-			tm.distance = (cppmath::vec3::dot(tm.normal, r.origin()) + d) / ndd;
+			tm.distance = cppmath::vec3::dot(tm.normal, A - r.origin()) / ndd;
 			
-			if (tm.distance < 0)
+			if (tm.distance < 10e-8)
 				return tm;
 			
 			tm.location = r.point_at_parameter(tm.distance);
@@ -219,7 +220,7 @@ namespace raytrace {
 			return center;
 		};
 	};
-	
+	*/
 	
 	class Plane : public SceneObject {
 		
@@ -266,6 +267,68 @@ namespace raytrace {
 		
 		ObjectMaterial get_material(const cppmath::vec3& point) {
 			return material;
+		};
+		
+		cppmath::vec3 get_center() {
+			return location;
+		};
+	};
+	
+	class UVPlane : public SceneObject {
+		
+	public:
+		cppmath::vec3 location;
+		cppmath::vec3 normal;
+		ObjectMaterial material;
+		// Maps uv texture
+		std::function<spaint::Color(double, double)> uv_map = [](double u, double v) -> spaint::Color { return spaint::Color(0); };
+		
+		UVPlane(const cppmath::vec3& location, const cppmath::vec3& normal) {
+			set(location, normal);
+		};
+		
+		void set(const cppmath::vec3& location, const cppmath::vec3& normal) {
+			this->location = location;
+			this->normal = normal;
+			this->normal.norm();
+		};
+		
+		void setMaterial(const ObjectMaterial& material) {
+			this->material = material;
+		};
+		
+		TraceManifold hit(const ray& r) {
+			// Caculate normal to plane
+			TraceManifold tm;
+			tm.normal = normal;
+			
+			double ndd = cppmath::vec3::dot(tm.normal, r.direction());
+			
+			// No hit, parallel
+			if (std::abs(ndd) <= 10e-8)
+				return tm;
+			
+			tm.distance = cppmath::vec3::dot(tm.normal, location - r.origin()) / ndd;
+			
+			if (tm.distance < 10e-8)
+				return tm;
+			
+			tm.location = r.point_at_parameter(tm.distance);
+			tm.hit = 1;
+			
+			return tm;
+		};
+		
+		ObjectMaterial get_material(const cppmath::vec3& point) {
+			cppmath::vec3 u = cppmath::vec3(normal.y, -normal.x, 0).norm();
+			cppmath::vec3 v = cppmath::vec3::cross(normal, u);
+			double u_coord = cppmath::vec3::dot(u, point);
+			double v_coord = cppmath::vec3::dot(v, point);
+			
+			ObjectMaterial mat = material;
+			mat.color = uv_map(u_coord, v_coord);
+			
+			return mat;
 		};
 		
 		cppmath::vec3 get_center() {

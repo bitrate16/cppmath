@@ -28,9 +28,9 @@ using namespace raytrace;
 #define KEY_ESCAPE 9
 #define KEY_R      27
 
-#define WIDTH 100
-#define HEIGHT 100
-#define SCALE 0.4
+#define WIDTH 250
+#define HEIGHT 250
+#define SCALE 1
 #define PIXEL_SCALE 2
 
 // bash c.sh "-lX11" example/raytrace
@@ -46,6 +46,7 @@ class scene : public component {
 		rt.camera = Camera(WIDTH, HEIGHT);
 		rt.set_background(Color::BLACK);
 		
+		/*
 		// Surrounding
 		Plane* red_plane = new Plane(vec3(0, -50, 0) * SCALE, vec3(0, 1, 0));
 		red_plane->material.color = Color::WHITE;
@@ -108,7 +109,7 @@ class scene : public component {
 		glass_sphere->material.color = Color::WHITE;
 		glass_sphere->material.refract = 0.9;
 		glass_sphere->material.refract_val = 0.5;
-		rt.get_scene().addObject(glass_sphere);
+		rt.get_scene().addObject(glass_sphere);*/
 		
 		/*Triangle* red_triangle = new Triangle(vec3(60, -14, 60), vec3(60, -14, 50), vec3(50, -14, 50));
 		red_triangle->material.color = Color::RED;
@@ -121,6 +122,31 @@ class scene : public component {
 		white_plane->material.diffuse = 0.1;
 		white_plane->material.reflect = 0.9;
 		rt.get_scene().addObject(white_plane);*/
+		
+		UVPlane* plane = new UVPlane(vec3(0, -50, 100) * SCALE, vec3(0, 1, 0));
+		plane->material.color = Color::WHITE;
+		plane->material.luminosity = 0.0;
+		plane->material.diffuse = 1.0;
+		plane->uv_map = [](double u, double v) -> Color {
+			int iu = u * 10;
+			int iv = v * 10;
+			if (iu < 0)
+				iu = 256 - ((-iu) % 256);
+			else
+				iu = iu % 256;
+			if (iv < 0)
+				iv = 256 - ((-iv) % 256);
+			else
+				iv = iv % 256;
+			
+			return Color(abs(iu), 0, abs(iv));
+		};
+		rt.get_scene().addObject(plane);
+		
+		Sphere* light_sphere = new Sphere(vec3(0, 50, 100) * SCALE, 5 * SCALE);
+		light_sphere->material.color = Color::WHITE;
+		light_sphere->material.luminosity = 1.0;
+		rt.get_scene().addObject(light_sphere);
 	};
 	
 	void destroy() {
