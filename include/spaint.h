@@ -20,16 +20,9 @@
 
 #pragma once
 
-
-
-#include <iostream>
-
-
-
-
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
-#include <stdlib.h>
+#include <cstdlib>
 #include <functional>
 #include <cstring>
 #include <exception>

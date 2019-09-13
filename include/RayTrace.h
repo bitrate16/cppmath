@@ -21,9 +21,13 @@ namespace raytrace {
 		// Ray direction
 		cppmath::vec3 B;
 		
+		ray(const cppmath::vec3& origin, const cppmath::vec3& direction, double pwr) : A(origin), B(direction), power(pwr) {};
+		
 		ray(const cppmath::vec3& origin, const cppmath::vec3& direction) : A(origin), B(direction) {};
 		
 		ray(const cppmath::vec3& direction) : B(direction) {};
+		
+		ray(const ray& r) : A(r.A), B(r.B), power(r.power) {};
 		
 		cppmath::vec3 point_at_parameter(double t) const { return A + t * B; };
 		
@@ -67,6 +71,8 @@ namespace raytrace {
 		double diffuse = 1.0;
 		// 0 : no light emission
 		double luminosity = 0.0;
+		// Set to 0 to avoid rendering surface for sphere lights
+		bool surface_visible = 1;
 	};
 	
 	class SceneObject {
@@ -127,6 +133,70 @@ namespace raytrace {
 		
 		ObjectMaterial get_material(const cppmath::vec3& point) {
 			return material;
+		};
+		
+		cppmath::vec3 get_center() {
+			return center;
+		};
+	};
+	
+	class UVSphere : public SceneObject {
+		
+	public:
+		
+		double radius;
+		cppmath::vec3 center;
+		ObjectMaterial material;
+		// Maps uv texture
+		std::function<spaint::Color(double, double)> uv_map = [](double u, double v) -> spaint::Color { return spaint::Color(0); };
+		
+		UVSphere(const cppmath::vec3& center, double radius) {
+			set(center, radius);
+		};
+		
+		void set(const cppmath::vec3& center, double radius) {
+			this->center = center;
+			this->radius = radius;
+		};
+		
+		void setMaterial(const ObjectMaterial& material) {
+			this->material = material;
+		};
+		
+		TraceManifold hit(const ray& r) {
+			cppmath::vec3 oc = r.origin() - center;
+			double a = cppmath::vec3::dot(r.direction(), r.direction());
+			double b = 2.0 * cppmath::vec3::dot(oc, r.direction());
+			double c = cppmath::vec3::dot(oc, oc) - radius * radius;
+			double discriminant = b * b - 4.0 * a * c;
+			if (discriminant < 0) {
+				return TraceManifold();
+			} else {
+				TraceManifold tman;
+				tman.distance = (-b - std::sqrt(discriminant)) / (2.0 * a);
+				if (tman.distance < 10e-8) {
+					tman.distance = (-b + std::sqrt(discriminant)) / (2.0 * a);
+					if (tman.distance < 10e-8)
+						return tman;
+				}
+				
+				tman.hit = 1;
+				tman.location = r.point_at_parameter(tman.distance);
+				tman.normal = (tman.location - center).norm();
+				return tman;
+			}
+		};
+		
+		ObjectMaterial get_material(const cppmath::vec3& point) {
+			cppmath::vec3 normal = point - center;
+			
+			double u = std::atan2(normal.x, normal.z);
+			double v = std::atan2(std::sqrt(normal.x * normal.x + normal.z * normal.z), normal.y);
+			
+			ObjectMaterial mat = material;
+			mat.color = uv_map(u, v);
+			
+			return mat;
 		};
 		
 		cppmath::vec3 get_center() {
@@ -251,7 +321,7 @@ namespace raytrace {
 			double ndd = cppmath::vec3::dot(tm.normal, r.direction());
 			
 			// No hit, parallel
-			if (std::abs(ndd) <= 10e-8)
+			if ((ndd < 0 ? -ndd : ndd) <= 10e-8)
 				return tm;
 			
 			tm.distance = cppmath::vec3::dot(tm.normal, location - r.origin()) / ndd;
@@ -305,7 +375,7 @@ namespace raytrace {
 			double ndd = cppmath::vec3::dot(tm.normal, r.direction());
 			
 			// No hit, parallel
-			if (std::abs(ndd) <= 10e-8)
+			if ((ndd < 0 ? -ndd : ndd) <= 10e-8)
 				return tm;
 			
 			tm.distance = cppmath::vec3::dot(tm.normal, location - r.origin()) / ndd;
@@ -357,6 +427,8 @@ namespace raytrace {
 		double shadow_diffuse = 0.5;
 		// Minimal ray power to keep running
 		double MIN_RAY_POWER = 10e-3;
+		// Set soft shadows enabled
+		bool soft_shadows = 0;
 	
 		~RayTraceScene() {
 			for (int i = 0; i < objects.size(); ++i)
@@ -377,10 +449,14 @@ namespace raytrace {
 			if (r.power < MIN_RAY_POWER)
 				return HitManifold();
 			
+			// Result
+			HitManifold hitm;
+			
 			// Find closest hit
 			TraceManifold closest_hit;
 			SceneObject* closest_object;
 			int closest = -1;
+			
 			// Collect hits on all objects
 			std::vector<TraceManifold> hits(objects.size());
 			for (int i = 0; i < objects.size(); ++i)
@@ -403,16 +479,22 @@ namespace raytrace {
 			}
 			
 			if (closest == -1)
-				return { 0, spaint::Color::BLACK };
+				return hitm;
 			
 			closest_hit = hits[closest];
 			closest_object = objects[closest];
 			
-			HitManifold hitm;
 			hitm.hit = 1;
 			
 			// If object is emitting light in this point, apply light color with luminosity scale
 			ObjectMaterial closest_material = closest_object->get_material(closest_hit.location);
+			
+			// if object has no furface visible, shoot ray over it
+			if (!closest_material.surface_visible) 
+				// Throw new ray & ignore current traced object
+				return shoot(ray(closest_hit.location, r.direction(), r.power), closest); 
+			
+			// Calculate luminosity if object emmit light
 			if (closest_material.luminosity) {
 				hitm.color = closest_material.color;
 				hitm.color.scale(closest_material.luminosity);
@@ -421,9 +503,11 @@ namespace raytrace {
 			
 			// Calculate ambient lighting from light emitting objects
 			spaint::Color lighting;
+			
 			// Iterate over all objects and hit then a ray to get summary resulting color lighting on this object
 			spaint::Color surface_color = closest_material.color;
 			surface_color.scale(closest_material.diffuse);
+			
 			if (closest_material.diffuse > 0) {
 				for (int i = 0; i < objects.size(); ++i) {
 					if (i == closest)
@@ -435,23 +519,24 @@ namespace raytrace {
 					if (!trm.hit)
 						continue;
 					
-					/*
-					// Check if there is no object that will overlap light source
-					bool overlap = 0;
-					for (int j = 0; j < objects.size(); ++j) {
-						if (i == j || j == closest)
-							continue;
-						
-						TraceManifold trmo = objects[j]->hit(l);
-						if (trmo.hit && trmo.distance >= 0 && trmo.distance < trm.distance) {
-							overlap = 1;
-							break;
+					// Avoid soft shadows
+					if (!soft_shadows) {
+						// Check if there is no object that will overlap light source
+						bool overlap = 0;
+						for (int j = 0; j < objects.size(); ++j) {
+							if (i == j || j == closest)
+								continue;
+							
+							TraceManifold trmo = objects[j]->hit(l);
+							if (trmo.hit && trmo.distance >= 0 && trmo.distance < trm.distance) {
+								overlap = 1;
+								break;
+							}
 						}
+						
+						if (overlap)
+							continue;
 					}
-					
-					if (overlap)
-						continue;
-					*/
 					
 					ObjectMaterial tmat = objects[i]->get_material(trm.location);
 					
@@ -473,7 +558,11 @@ namespace raytrace {
 							TraceManifold trmo = objects[j]->hit(l);
 							if (trmo.hit && trmo.distance >= 0 && trmo.distance < trm.distance) {
 								ObjectMaterial mato = objects[i]->get_material(trmo.location);
-								double cs = abs(cppmath::vec3::cos_between(l.direction(), (trmo.normal).norm()) * (1.0 - mato.refract) * shadow_diffuse);
+								double cs = cppmath::vec3::cos_between(l.direction(), trmo.normal);
+								cs = cs < 0 ? -cs : cs;
+								cs *= cppmath::vec3::cos_between(l.direction(), (objects[i]->get_center() - l.origin()).norm());
+								cs *= (1.0 - mato.refract);
+								cs *= (1.0 - shadow_diffuse);
 								shadow_cos -= cs;
 							}
 						}

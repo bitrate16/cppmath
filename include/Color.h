@@ -1,5 +1,7 @@
 #pragma once
 
+#include <iostream>
+
 namespace spaint {
 	// Class used for hording rgb color values
 	class Color {
@@ -212,6 +214,11 @@ namespace spaint {
 				a.b != b.b
 				||
 				a.a != b.a;
+	};
+		
+	std::ostream& operator<<(std::ostream& os, const Color& c) {
+		os << "(r: " << c.r << ", g: " << c.g << ", b: " << c.b << ", a: " << c.a << ')';
+		return os;
 	};
 	
 	Color Color::RED     = Color(255, 0  , 0  );
