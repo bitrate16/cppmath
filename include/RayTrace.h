@@ -704,15 +704,16 @@ namespace raytrace {
 							++total_diffuse;
 							
 							spaint::Color dif_res = hitd.color;
-							dif_res.scale(closest_material.color);
-							dif_res.scale(cppmath::vec3::cos_between(l.direction(), -r.direction()));
-							dif_res.scale(cos_ln);
-							summary_diffuse += dif_res;
+							dif_res.scale_off_range(closest_material.color);
+							dif_res.scale_off_range(cppmath::vec3::cos_between(l.direction(), -r.direction()));
+							dif_res.scale_off_range(cos_ln);
+							summary_diffuse.add_off_range(dif_res);
 						}
 							
 						// Scale color & apply	
-						summary_diffuse.scale(closest_material.diffuse);
-						summary_diffuse.scale(diffuse_light_scale);
+						summary_diffuse.scale_off_range(closest_material.diffuse);
+						summary_diffuse.scale_off_range(diffuse_light_scale);
+						summary_diffuse.scale(1.0 / (double) total_diffuse);
 						hitm.color += summary_diffuse;
 					}
 				}

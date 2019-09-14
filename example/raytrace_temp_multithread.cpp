@@ -36,7 +36,7 @@ using namespace spaint;
 using namespace cppmath;
 using namespace raytrace;
 
-#define FILENAME "output/aframe2.png"
+#define FILENAME "output/aframe.png"
 
 #define THREAD_COUNT 4
 
@@ -93,7 +93,7 @@ public:
 		rt.camera = Camera(WIDTH, HEIGHT);
 		rt.set_background(Color::BLACK);
 		rt.get_scene().soft_shadows = 1;
-		rt.get_scene().diffuse_light = 1;
+		//rt.get_scene().diffuse_light = 1;
 		rt.get_scene().soft_shadows_scale = 0.5;
 		rt.get_scene().random_diffuse_ray = 1;
 		rt.get_scene().random_diffuse_count = 8;
@@ -155,9 +155,24 @@ public:
 		Sphere* glass_sphere = new Sphere(vec3(-5, -5, 50) * SCALE, 10 * SCALE);
 		glass_sphere->material.color = Color::WHITE;
 		glass_sphere->material.refract = 0.9;
-		glass_sphere->material.refract_val = 0.5;
+		glass_sphere->material.refract_val = -0.5;
 		glass_sphere->material.reflect = 0.1;
 		rt.get_scene().addObject(glass_sphere);
+	
+		UVSphere* uv_sphere = new UVSphere(vec3(-10, 30, 120) * SCALE, 10 * SCALE);
+		uv_sphere->material.color = Color::WHITE;
+		uv_sphere->material.luminosity = 0.0;
+		uv_sphere->material.diffuse = 1.0;
+		uv_sphere->uv_map = [](double u, double v) -> Color {
+			u += 1;
+			int iu = u / 3.14159265358979323846 * 2;
+			int iv = v / 3.14159265358979323846 * 2;
+			
+			if (!(iu % 2 == 0) && (iv % 2 == 0) || (iu % 2 == 0) && !(iv % 2 == 0))
+				return Color(255, 0, 255);
+			return Color();
+		};
+		rt.get_scene().addObject(uv_sphere);
 	};
 	
 	~tracer() {
@@ -211,7 +226,7 @@ void worker_function(tracer* t, int thread_id) {
 				std::cout << (t->y + 1) << " / " << t->rt.get_width() << std::endl;
 				// std::cout << "Thread " << thread_id << std::endl;
 			}
-			if (t->y >= t->rt.get_height() - 1) {
+			if (t->y >= t->rt.get_height()) {
 				++t->finshed_threads;
 				
 				if (!t->written) {

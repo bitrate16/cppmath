@@ -46,7 +46,7 @@ class scene : public component {
 		rt.camera = Camera(WIDTH, HEIGHT);
 		rt.set_background(Color::BLACK);
 		rt.get_scene().soft_shadows = 1;
-		rt.get_scene().diffuse_light = 1;
+		//rt.get_scene().diffuse_light = 1;
 		rt.get_scene().soft_shadows_scale = 0.5;
 		rt.get_scene().random_diffuse_ray = 1;
 		rt.get_scene().random_diffuse_count = 8;
