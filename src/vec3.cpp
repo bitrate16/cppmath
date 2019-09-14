@@ -198,6 +198,43 @@ double vec3::cos_between(const vec3& a, const vec3& b) {
 	return dot(a, b) / len;
 };
 
+vec3 vec3::sphericalToCartesian(const vec3& v) {
+	// phi -> x -> [0 ~ 2pi]
+	// theta -> y -> [0 ~ pi]
+	// radius -> z -> {0 ~ inf]
+	
+	double c = std::cos(v.x);
+	
+	vec3 s;
+	s.x = cos(s.y) * c * v.z;
+	s.y = sin(s.y) * c * v.z;
+	s.z = sin(s.x) * v.z;
+	
+	return s;
+};
+
+vec3 vec3::cartesianToSpherical(const vec3& v) {
+	// phi -> x -> [0 ~ 2pi]
+	// theta -> y -> [0 ~ pi]
+	// radius -> z -> {0 ~ inf]
+	
+	vec3 s;
+	s.z = v.len();
+	s.y = std::atan2(v.y, v.x);
+	s.x = std::acos(v.z / s.z);
+	
+	return s;
+};
+
+vec3 vec3::rotateAroundVector(const vec3& v, const vec3& r, double angle) {
+	double cos_a = std::cos(angle);
+	double sin_a = std::sin(angle);
+	
+	vec3 rot = (v * cos_a) + (cross(r, v) * sin_a) + (r * dot(r, v)) * (1 - cos_a);
+	
+	return rot;
+};
+
 // C U S T O M _ O P E R A T O R S
 
 /* Normalize the vector */

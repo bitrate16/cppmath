@@ -28,10 +28,10 @@ using namespace raytrace;
 #define KEY_ESCAPE 9
 #define KEY_R      27
 
-#define WIDTH 250
-#define HEIGHT 250
-#define SCALE 1
-#define PIXEL_SCALE 2
+#define WIDTH 100
+#define HEIGHT 100
+#define SCALE 0.4
+#define PIXEL_SCALE 3
 
 // bash c.sh "-lX11" example/raytrace
 
@@ -46,7 +46,11 @@ class scene : public component {
 		rt.camera = Camera(WIDTH, HEIGHT);
 		rt.set_background(Color::BLACK);
 		rt.get_scene().soft_shadows = 1;
-		rt.get_scene().shadow_diffuse = 0.5;
+		rt.get_scene().diffuse_light = 1;
+		rt.get_scene().soft_shadows_scale = 0.5;
+		rt.get_scene().random_diffuse_ray = 1;
+		rt.get_scene().random_diffuse_count = 8;
+		rt.get_scene().MAX_RAY_DEPTH = 4;
 		
 		
 		// Surrounding
@@ -80,6 +84,7 @@ class scene : public component {
 		magenta_plane->material.diffuse = 1.0;
 		rt.get_scene().addObject(magenta_plane);
 		
+		/*
 		// Light
 		Sphere* light_sphere = new Sphere(vec3(0, 0, 100) * SCALE, 5 * SCALE);
 		light_sphere->material.color = Color::WHITE;
@@ -94,10 +99,11 @@ class scene : public component {
 		Sphere* green_sphere = new Sphere(vec3(0, 40, 100) * SCALE, 5 * SCALE);
 		green_sphere->material.color = Color::GREEN;
 		rt.get_scene().addObject(green_sphere);
+		*/
 		
 		
 		// Spheres
-		/*Sphere* red_sphere = new Sphere(vec3(20, 20, 120) * SCALE, 5 * SCALE);
+		Sphere* red_sphere = new Sphere(vec3(20, 20, 120) * SCALE, 5 * SCALE);
 		red_sphere->material.color = Color::RED;
 		red_sphere->material.luminosity = 0.0;
 		rt.get_scene().addObject(red_sphere);
@@ -122,7 +128,8 @@ class scene : public component {
 		glass_sphere->material.color = Color::WHITE;
 		glass_sphere->material.refract = 0.9;
 		glass_sphere->material.refract_val = 0.5;
-		rt.get_scene().addObject(glass_sphere);*/
+		glass_sphere->material.reflect = 0.1;
+		rt.get_scene().addObject(glass_sphere);
 		
 		
 		/*Triangle* red_triangle = new Triangle(vec3(60, -14, 60), vec3(60, -14, 50), vec3(50, -14, 50));

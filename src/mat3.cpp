@@ -163,14 +163,34 @@ double mat3::det() {
 };
 
 mat3 mat3::inv() {
-	/*
-	double determ = det();
-	if (determ == 0.0) {
-		return mat3(std::numeric_limits<double>::quiet_NaN());
+	double invdet = det();
+	if (invdet == 0.0) {
+		M11 = std::numeric_limits<double>::quiet_NaN();
+		M12 = std::numeric_limits<double>::quiet_NaN();
+		M13 = std::numeric_limits<double>::quiet_NaN();
+		M21 = std::numeric_limits<double>::quiet_NaN();
+		M22 = std::numeric_limits<double>::quiet_NaN();
+		M23 = std::numeric_limits<double>::quiet_NaN();
+		M31 = std::numeric_limits<double>::quiet_NaN();
+		M32 = std::numeric_limits<double>::quiet_NaN();
+		M33 = std::numeric_limits<double>::quiet_NaN();
+		
+		return *this;
 	}
-	trans(); // 2x2 minors
-	mul(1.0 / determ);
-	*/
+	
+	invdet = 1.0 / invdet;
+	
+	M11 = (M22 * M33 - M32 * M23) * invdet;
+	M12 = (M13 * M32 - M12 * M33) * invdet;
+	M13 = (M12 * M23 - M13 * M22) * invdet;
+	M21 = (M23 * M31 - M21 * M33) * invdet;
+	M22 = (M11 * M33 - M13 * M31) * invdet;
+	M23 = (M21 * M13 - M11 * M23) * invdet;
+	M31 = (M21 * M32 - M31 * M22) * invdet;
+	M32 = (M31 * M12 - M11 * M32) * invdet;
+	M33 = (M11 * M22 - M21 * M12) * invdet;
+	
+	return *this;
 };
 
 bool mat3::is_inv() {

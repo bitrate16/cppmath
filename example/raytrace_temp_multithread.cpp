@@ -20,9 +20,14 @@
 
 #include <string>
 #include <cstdlib>
+#include <iostream>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+
+#include <thread>
+#include <condition_variable>
+#include <mutex>
 
 #include "RayTrace.h"
 #include "lodepng.h"
@@ -31,26 +36,68 @@ using namespace spaint;
 using namespace cppmath;
 using namespace raytrace;
 
+#define FILENAME "output/aframe2.png"
+
+#define THREAD_COUNT 4
+
 #define WIDTH 1000
 #define HEIGHT 1000
 #define SCALE 4
 
-// bash c.sh "-lX11" example/raytrace_temp
+// bash c.sh "-lpthread" example/raytrace_temp_multithread
+
+class tracer;
+
+void worker_function(tracer* t, int thread_id);
 
 class tracer {
 	
 public:
 	
+	// 1. All threads waits for main to pause on start
+	// 2. Main waits all threads to stop after work
+	std::mutex waiter;
+	std::condition_variable cv;
+	
+	// Protect coords
+	std::mutex index_access;
+	int x = 0;
+	int y = 0;
+	
+	bool written = 0;
+	
+	// Array of threads
+	std::thread* threads[THREAD_COUNT];
+	
+	// Output array
+	unsigned int* frame;
+	
+	// Number of finished threads
+	int finshed_threads = 0;
+	
 	RayTrace rt;
 	
 	tracer() {
+		
+		// INIT THREADS
+		
+		for (int i = 0; i < THREAD_COUNT; ++i)
+			threads[i] = new std::thread(worker_function, this, i);
+		
+		create_scene();
+	};
+	
+	void create_scene() {
+		// INIT SCENE
+		
 		rt.camera = Camera(WIDTH, HEIGHT);
 		rt.set_background(Color::BLACK);
-		//rt.get_scene().soft_shadows = 1;
+		rt.get_scene().soft_shadows = 1;
 		rt.get_scene().diffuse_light = 1;
 		rt.get_scene().soft_shadows_scale = 0.5;
+		rt.get_scene().random_diffuse_ray = 1;
+		rt.get_scene().random_diffuse_count = 8;
 		rt.get_scene().MAX_RAY_DEPTH = 4;
-		
 		
 		// Surrounding
 		Plane* red_plane = new Plane(vec3(0, -50, 0) * SCALE, vec3(0, 1, 0));
@@ -113,6 +160,11 @@ public:
 		rt.get_scene().addObject(glass_sphere);
 	};
 	
+	~tracer() {
+		for (int i = 0; i < THREAD_COUNT; ++i)
+			delete threads[i];
+	};
+	
 	void encodeOneStep(const char* filename, const unsigned char* image, unsigned width, unsigned height) {
 		/*Encode the image*/
 		unsigned error = lodepng_encode32_file(filename, image, width, height);
@@ -123,28 +175,87 @@ public:
 	
 	void render() {
 		std::cout << "RENDERING\n";
-		unsigned width = WIDTH, height = HEIGHT;
-		unsigned int* frame = (unsigned int*) malloc(width * height * 4);
 		
-		for (int x = 0; x < rt.get_width(); ++x) {
-			std::cout << (x + 1) << " / " << rt.get_width() << std::endl;
-			for (int y = 0; y < rt.get_height(); ++y) {
-				Color frag = rt.hitColorAt(x, y);
-				frag.a = 255;
-				frame[x + y * WIDTH] = frag.abgr();
-			}
-		}
-			
-		std::string outname = "output/aframe.png";
+		frame = (unsigned int*) malloc(WIDTH * HEIGHT * 4);
 		
-		struct stat st = {0};
-		if (stat("output", &st) == -1) 
-			mkdir("output", 0700);
+		/*std::unique_lock<std::mutex> locker(waiter);
+		cv.notify_all();
+		cv.wait(locker);*/
 		
-		encodeOneStep(outname.c_str(), (unsigned char*)frame, width, height);
-					
-		std::cout << "DONE\n";
+		cv.notify_all();
+		
+		for (int i = 0; i < THREAD_COUNT; ++i)
+			threads[i]->join();
 	};
+};
+
+void worker_function(tracer* t, int thread_id) {
+	std::cout << "Thread " << thread_id << " created" << std::endl;
+	
+	// Wait for main thread to start tracer
+	{ 
+		std::unique_lock<std::mutex> locker(t->waiter);
+		t->cv.wait(locker);
+		std::cout << "Thread " << thread_id << " started" << std::endl;
+	}
+	
+	// Do rendering
+	while (1) {
+		int x, y;
+		{
+			std::unique_lock<std::mutex> locker(t->index_access);
+			if (t->x == t->rt.get_width() - 1) {
+				t->x = 0;
+				++t->y;
+				
+				std::cout << (t->y + 1) << " / " << t->rt.get_width() << std::endl;
+				// std::cout << "Thread " << thread_id << std::endl;
+			}
+			if (t->y >= t->rt.get_height() - 1) {
+				++t->finshed_threads;
+				
+				if (!t->written) {
+					t->written = 1;
+					std::cout << "DONE\n";
+					
+					t->encodeOneStep(FILENAME, (unsigned char*) t->frame, WIDTH, HEIGHT);
+								
+					std::cout << "WRITTEN\n";
+					
+					exit(0);
+				}
+				
+				// Wake main after all threads finished
+				/*if (t->finshed_threads == THREAD_COUNT) {
+		
+					std::cout << "DONE\n";
+					
+					t->encodeOneStep(FILENAME, (unsigned char*) t->frame, WIDTH, HEIGHT);
+								
+					std::cout << "WRITTEN\n";
+					
+					t->cv.notify_all();
+				}*/
+				
+				std::cout << "Thread " << thread_id << " stopped" << std::endl;
+				return;
+			}
+			
+			x = t->x;
+			y = t->y;
+			++t->x;
+			
+			locker.unlock();
+		}
+		
+		// std::cout << "Thread " << thread_id << " --> (" << x << ", " << y << ")" << std::endl;
+		
+		Color frag = t->rt.hitColorAt(x, y);
+		frag.a = 255;
+		t->frame[x + y * WIDTH] = frag.abgr();
+	}
+	
+	
 };
 
 int main() {

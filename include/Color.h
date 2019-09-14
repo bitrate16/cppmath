@@ -105,12 +105,22 @@ namespace spaint {
 			a = a < 0 ? 0 : (a > 255 ? 255 : a);
 		};
 		
-		void scale(double f) {
+		Color scale(double f) {
 			r *= f;
 			g *= f;
 			b *= f;
 			a *= f;
 			normalize();
+			return *this;
+		};
+		
+		Color scale(const Color& c) {
+			r *= (double) c.r / 255.0;
+			g *= (double) c.g / 255.0;
+			b *= (double) c.b / 255.0;
+			a *= (double) c.a / 255.0;
+			normalize();
+			return *this;
 		};
 		
 		// Interpolate between two colors
@@ -186,6 +196,42 @@ namespace spaint {
 			this->b += a.b;
 			this->a += a.a;
 			this->normalize();
+			return *this;
+		};
+		
+		// Add other color without normalization
+		Color add_off_range(const Color& c) {
+			this->r += c.r;
+			this->g += c.g;
+			this->b += c.b;
+			this->a += c.a;
+			return *this;
+		};
+		
+		// Substract other color without normalization
+		Color sub_off_range(const Color& c) {
+			this->r -= c.r;
+			this->g -= c.g;
+			this->b -= c.b;
+			this->a -= c.a;
+			return *this;
+		};
+		
+		// Scale by value without normalization
+		Color scale_off_range(double f) {
+			r *= f;
+			g *= f;
+			b *= f;
+			a *= f;
+			return *this;
+		};
+		
+		// Scale by value without normalization
+		Color scale_off_range(const Color& c) {
+			r *= (double) c.r / 255.0;
+			g *= (double) c.g / 255.0;
+			b *= (double) c.b / 255.0;
+			a *= (double) c.a / 255.0;
 			return *this;
 		};
 	};

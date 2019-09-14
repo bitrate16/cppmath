@@ -109,6 +109,13 @@ namespace cppmath {
 		
 		static double cos_between(const vec3& a, const vec3& b);
 		
+		static vec3 sphericalToCartesian(const vec3& v);
+		
+		static vec3 cartesianToSpherical(const vec3& v);
+		
+		// Rotate vector v around vector v
+		static vec3 rotateAroundVector(const vec3& v, const vec3& r, double angle);
+		
 		/* Normalize the vector */
 		vec3 operator~();
 	
