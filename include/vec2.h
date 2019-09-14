@@ -49,10 +49,10 @@ namespace cppmath {
 		vec2 operator=(const vec2 &v);
 
 		/* Negative vector */
-		vec2 operator-();
+		vec2 operator-() const;
 		
 		/* Nothing */
-		vec2 operator+();
+		vec2 operator+() const;
 		
 		
 		// B A S I C _ F U N C T I O N S

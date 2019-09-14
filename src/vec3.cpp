@@ -20,6 +20,7 @@
 
 #include <iostream>
 #include <stdexcept>
+#include <algorithm>
 
 #include "vec3.h"
 #include "vec3.h"
@@ -66,7 +67,7 @@ vec3 vec3::operator=(const vec3 &v) {
 }
 
 /* Negative vector */
-vec3 vec3::operator-() {
+vec3 vec3::operator-() const {
 	vec3 v(*this);
 	v.x = -v.x;
 	v.y = -v.y;
@@ -75,7 +76,7 @@ vec3 vec3::operator-() {
 }
 
 /* Nothing */
-vec3 vec3::operator+() {
+vec3 vec3::operator+() const {
 	vec3 v(*this);
 	v.x = v.x;
 	v.y = v.y;
@@ -174,10 +175,13 @@ vec3 vec3::reflect(const vec3& v, const vec3& normal) {
 };
 
 vec3 vec3::refract(const vec3& v, const vec3& normal, double eta) {
+	/*
 	eta = 2.0f - eta;
     double cosv = dot(normal, v);
     return (v * eta - normal * (-cosv + eta * cosv));
-    /*
+	*/
+	
+	/*
 	double ndv = vec3::dot(normal, v);
 	double k = 1.0 - eta * eta * (1.0 - ndv * ndv);
 	if (k < 0.0)
@@ -185,6 +189,21 @@ vec3 vec3::refract(const vec3& v, const vec3& normal, double eta) {
 	else
 		return eta * v - (eta * ndv + std::sqrt(k)) * normal;
 	*/
+	
+	double cosi = std::clamp(dot(v, normal), (double) -1, (double) 1); 
+	double etai = 1, etat = eta; 
+	vec3 n = normal; 
+	
+	if (cosi < 0) 
+		cosi = -cosi; 
+	else { 
+		std::swap(etai, etat); n = -normal; 
+	} 
+	
+	double etav = etai / etat; 
+	double k = 1 - etav * etav * (1 - cosi * cosi); 
+	
+	return k < 0 ? vec3() : etav * v + (etav * cosi - std::sqrt(k)) * normal; 
 };
 
 vec3 vec3::from_direction_cosines(double ax, double ay, double az) {

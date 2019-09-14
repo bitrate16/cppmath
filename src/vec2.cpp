@@ -61,7 +61,7 @@ vec2 vec2::operator=(const vec2 &v) {
 }
 
 /* Negative vector */
-vec2 vec2::operator-() {
+vec2 vec2::operator-() const {
 	vec2 v(*this);
 	v.x = -v.x;
 	v.y = -v.y;
@@ -69,7 +69,7 @@ vec2 vec2::operator-() {
 }
 
 /* Nothing */
-vec2 vec2::operator+() {
+vec2 vec2::operator+() const {
 	vec2 v(*this);
 	v.x = v.x;
 	v.y = v.y;

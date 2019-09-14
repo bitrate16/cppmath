@@ -40,9 +40,9 @@ using namespace raytrace;
 
 #define THREAD_COUNT 4
 
-#define WIDTH 1000
-#define HEIGHT 1000
-#define SCALE 4
+#define WIDTH 10000
+#define HEIGHT 10000
+#define SCALE 40
 
 // bash c.sh "-lpthread" example/raytrace_temp_multithread
 
@@ -155,11 +155,11 @@ public:
 		Sphere* glass_sphere = new Sphere(vec3(-5, -5, 50) * SCALE, 10 * SCALE);
 		glass_sphere->material.color = Color::WHITE;
 		glass_sphere->material.refract = 0.9;
-		glass_sphere->material.refract_val = -0.5;
+		glass_sphere->material.refract_val = 3.3;
 		glass_sphere->material.reflect = 0.1;
 		rt.get_scene().addObject(glass_sphere);
 	
-		UVSphere* uv_sphere = new UVSphere(vec3(-10, 30, 120) * SCALE, 10 * SCALE);
+		UVSphere* uv_sphere = new UVSphere(vec3(30, 20, 90) * SCALE, 10 * SCALE);
 		uv_sphere->material.color = Color::WHITE;
 		uv_sphere->material.luminosity = 0.0;
 		uv_sphere->material.diffuse = 1.0;
