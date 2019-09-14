@@ -40,9 +40,9 @@ using namespace raytrace;
 
 #define THREAD_COUNT 4
 
-#define WIDTH 10000
-#define HEIGHT 10000
-#define SCALE 40
+#define WIDTH 250
+#define HEIGHT 250
+#define SCALE 1
 
 // bash c.sh "-lpthread" example/raytrace_temp_multithread
 
