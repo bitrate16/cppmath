@@ -792,7 +792,7 @@ namespace raytrace {
 				}
 			}
 			
-			hitm.color.scale(r.power);
+			// hitm.color.scale(r.power);
 			return hitm;
 		};
 	};

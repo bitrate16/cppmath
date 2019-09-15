@@ -19,6 +19,7 @@
 */
 
 #include <string>
+#include <fstream> 
 #include <cstdlib>
 #include <iostream>
 #include <sys/types.h>
@@ -37,14 +38,17 @@ using namespace cppmath;
 using namespace raytrace;
 
 #define FILENAME "output/aframe.png"
+#define FILENAME_BINARY "output/aframe.rawb"
 
 #define THREAD_COUNT 4
 
+#define WRITE_BINARY
+
 // #define ANTI_ALIASING
 
-#define WIDTH 250
-#define HEIGHT 250
-#define SCALE 1
+#define WIDTH 25000
+#define HEIGHT 25000
+#define SCALE 100
 
 // bash c.sh "-lpthread" example/raytrace_temp_multithread
 
@@ -79,12 +83,21 @@ public:
 	
 	RayTrace rt;
 	
+#ifdef WRITE_BINARY
+	// Format: Order test: 0x01020304[4B], WIDTH[4B], HEIGHT[4B], RGBA[4B * WIDTH * HEIGHT]
+	std::ofstream binary_file;
+#endif
+	
 	tracer() {
 		
 		// INIT THREADS
 		
-		frame = (unsigned int*) malloc((size_t) WIDTH * (size_t) HEIGHT * (size_t) 4);
+	#ifdef WRITE_BINARY
+		binary_file = std::ofstream(FILENAME_BINARY, std::ofstream::binary);
+	#endif
 		
+		frame = (unsigned int*) malloc((size_t) WIDTH * (size_t) HEIGHT * (size_t) 4);
+	
 		for (int i = 0; i < THREAD_COUNT; ++i)
 			threads[i] = new std::thread(worker_function, this, i);
 		
@@ -203,6 +216,12 @@ public:
 	~tracer() {
 		for (int i = 0; i < THREAD_COUNT; ++i)
 			delete threads[i];
+			
+		free(frame);
+	#ifdef WRITE_BINARY
+		binary_file.flush();
+		binary_file.close();
+	#endif
 	};
 	
 	void encodeOneStep(const char* filename, const unsigned char* image, unsigned width, unsigned height) {
@@ -256,8 +275,19 @@ void worker_function(tracer* t, int thread_id) {
 					t->written = 1;
 					std::cout << "DONE\n";
 					
+				#ifndef WRITE_BINARY
 					t->encodeOneStep(FILENAME, (unsigned char*) t->frame, WIDTH, HEIGHT);
-								
+				#else
+					int order_test = 0x01020304;
+					int width = WIDTH;
+					int height = HEIGHT;
+					t->binary_file.write((char*) &order_test, 4);
+					t->binary_file.write((char*) &width, 4);
+					t->binary_file.write((char*) &height, 4);
+					t->binary_file.write((char*) t->frame, (size_t) WIDTH * (size_t) HEIGHT * (size_t) 4);
+					t->binary_file.flush();
+				#endif
+				
 					std::cout << "WRITTEN\n";
 					
 					exit(0);
@@ -298,7 +328,6 @@ void worker_function(tracer* t, int thread_id) {
 		frag.scale(0.25);
 		
 		frag.a = 255;
-		
 		t->frame[x + y * WIDTH] = frag.abgr();
 #else
 		Color frag = t->rt.hitColorAt(x, y);
@@ -306,8 +335,6 @@ void worker_function(tracer* t, int thread_id) {
 		t->frame[x + y * WIDTH] = frag.abgr();
 #endif
 	}
-	
-	
 };
 
 int main() {
