@@ -84,7 +84,7 @@ public:
 	RayTrace rt;
 	
 #ifdef WRITE_BINARY
-	// Format: Order test: 0x01020304[4B], WIDTH[4B], HEIGHT[4B], RGBA[4B * WIDTH * HEIGHT]
+	// Format: Order test: 0x01020304[4B], WIDTH[4B], HEIGHT[4B], ABGR[4B * WIDTH * HEIGHT]
 	std::ofstream binary_file;
 #endif
 	
