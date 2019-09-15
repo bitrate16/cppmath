@@ -46,9 +46,9 @@ using namespace raytrace;
 
 // #define ANTI_ALIASING
 
-#define WIDTH 25000
-#define HEIGHT 25000
-#define SCALE 100
+#define WIDTH 250
+#define HEIGHT 250
+#define SCALE 1
 
 // bash c.sh "-lpthread" example/raytrace_temp_multithread
 
