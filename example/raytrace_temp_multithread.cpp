@@ -32,6 +32,7 @@
 
 #include "RayTrace.h"
 #include "lodepng.h"
+#include "rawb.h"
 
 using namespace spaint;
 using namespace cppmath;
@@ -42,7 +43,7 @@ using namespace raytrace;
 
 #define THREAD_COUNT 4
 
-#define WRITE_BINARY
+// #define WRITE_BINARY
 
 // #define ANTI_ALIASING
 
@@ -84,7 +85,7 @@ public:
 	RayTrace rt;
 	
 #ifdef WRITE_BINARY
-	// Format: Order test: 0x01020304[4B], WIDTH[4B], HEIGHT[4B], ABGR[4B * WIDTH * HEIGHT]
+	// Format: Order test: 0x01020304[4B], rawb::pixel_type::ABGR[1B], WIDTH[4B], HEIGHT[4B], ABGR[4B * WIDTH * HEIGHT]
 	std::ofstream binary_file;
 #endif
 	
@@ -278,12 +279,14 @@ void worker_function(tracer* t, int thread_id) {
 				#ifndef WRITE_BINARY
 					t->encodeOneStep(FILENAME, (unsigned char*) t->frame, WIDTH, HEIGHT);
 				#else
-					int order_test = 0x01020304;
-					int width = WIDTH;
-					int height = HEIGHT;
+					uint32_t order_test = 0x01020304;
+					uint32_t width = WIDTH;
+					uint32_t height = HEIGHT;
+					uint8_t pix_type = rawb::pixel_type::ABGR;
 					t->binary_file.write((char*) &order_test, 4);
 					t->binary_file.write((char*) &width, 4);
 					t->binary_file.write((char*) &height, 4);
+					t->binary_file.write((char*) &pix_type, 1);
 					t->binary_file.write((char*) t->frame, (size_t) WIDTH * (size_t) HEIGHT * (size_t) 4);
 					t->binary_file.flush();
 				#endif
