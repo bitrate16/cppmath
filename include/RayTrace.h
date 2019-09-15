@@ -204,7 +204,7 @@ namespace raytrace {
 		};
 	};
 	
-	class Triangle : public SceneObject {
+	/*class Triangle : public SceneObject {
 		
 	public:
 		cppmath::vec3 center;
@@ -337,7 +337,7 @@ namespace raytrace {
 		cppmath::vec3 get_center() {
 			return center;
 		};
-	};
+	};*/
 	
 	class Plane : public SceneObject {
 		
