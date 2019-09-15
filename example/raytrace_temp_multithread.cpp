@@ -40,6 +40,8 @@ using namespace raytrace;
 
 #define THREAD_COUNT 4
 
+// #define ANTI_ALIASING
+
 #define WIDTH 250
 #define HEIGHT 250
 #define SCALE 1
@@ -80,6 +82,8 @@ public:
 	tracer() {
 		
 		// INIT THREADS
+		
+		frame = (unsigned int*) malloc((size_t) WIDTH * (size_t) HEIGHT * (size_t) 4);
 		
 		for (int i = 0; i < THREAD_COUNT; ++i)
 			threads[i] = new std::thread(worker_function, this, i);
@@ -149,7 +153,8 @@ public:
 		
 		Sphere* white_sphere = new Sphere(vec3(10, 0, 100) * SCALE, 10 * SCALE);
 		white_sphere->material.color = Color::WHITE;
-		white_sphere->material.reflect = 1.0;
+		white_sphere->material.reflect = 0.9;
+		white_sphere->material.diffuse = 0.1;
 		rt.get_scene().addObject(white_sphere);
 		
 		Sphere* glass_sphere = new Sphere(vec3(-5, -5, 50) * SCALE, 10 * SCALE);
@@ -173,6 +178,26 @@ public:
 			return Color();
 		};
 		rt.get_scene().addObject(uv_sphere);
+		
+		for (int i = 1; i <= 2; ++i) {
+			white_sphere = new Sphere(vec3(10 - i * 20, i * 10, 100) * SCALE, 10 * SCALE);
+			white_sphere->material.color = Color::WHITE;
+			white_sphere->material.reflect = 0.9;
+			white_sphere->material.diffuse = 0.1;
+			rt.get_scene().addObject(white_sphere);
+		}
+		
+		white_sphere = new Sphere(vec3(10, 0, -10) * SCALE, 10 * SCALE);
+		white_sphere->material.color = Color::WHITE;
+		white_sphere->material.reflect = 0.9;
+		white_sphere->material.diffuse = 0.1;
+		rt.get_scene().addObject(white_sphere);
+		
+		white_sphere = new Sphere(vec3(-10, 15, -10) * SCALE, 10 * SCALE);
+		white_sphere->material.color = Color::WHITE;
+		white_sphere->material.reflect = 0.9;
+		white_sphere->material.diffuse = 0.1;
+		rt.get_scene().addObject(white_sphere);
 	};
 	
 	~tracer() {
@@ -190,8 +215,6 @@ public:
 	
 	void render() {
 		std::cout << "RENDERING\n";
-		
-		frame = (unsigned int*) malloc(WIDTH * HEIGHT * 4);
 		
 		/*std::unique_lock<std::mutex> locker(waiter);
 		cv.notify_all();
@@ -265,9 +288,23 @@ void worker_function(tracer* t, int thread_id) {
 		
 		// std::cout << "Thread " << thread_id << " --> (" << x << ", " << y << ")" << std::endl;
 		
+#ifdef ANTI_ALIASING
+		Color frag;
+		frag.add_off_range(t->rt.hitColorAt(x + 1, y + 1));
+		frag.add_off_range(t->rt.hitColorAt(x + 1, y + 0));
+		frag.add_off_range(t->rt.hitColorAt(x + 0, y + 1));
+		frag.add_off_range(t->rt.hitColorAt(x + 0, y + 0));
+		
+		frag.scale(0.25);
+		
+		frag.a = 255;
+		
+		t->frame[x + y * WIDTH] = frag.abgr();
+#else
 		Color frag = t->rt.hitColorAt(x, y);
 		frag.a = 255;
 		t->frame[x + y * WIDTH] = frag.abgr();
+#endif
 	}
 	
 	

@@ -204,7 +204,6 @@ namespace raytrace {
 		};
 	};
 	
-	/*
 	class Triangle : public SceneObject {
 		
 	public:
@@ -228,58 +227,107 @@ namespace raytrace {
 		};
 		
 		TraceManifold hit(const ray& r) {
-			cppmath::vec3 ab = B - A;
-			cppmath::vec3 ac = C - A;
+			// TraceManifold tm;
+			// cppmath::vec3 v0v1 = B - A; 
+			// cppmath::vec3 v0v2 = C - A; 
+			// cppmath::vec3 pvec = cppmath::vec3::cross(v0v1, v0v2); 
+			// double det = cppmath::vec3::dot(v0v1, pvec); 
+			// 
+			// if (fabs(det) < 10e-8) return tm; 
+			// double invDet = 1 / det; 
+		    // 
+			// cppmath::vec3 tvec = r.origin() - A; 
+			// double u = cppmath::vec3::dot(tvec, pvec) * invDet; 
+			// if (u < 0 || u > 1) return tm; 
+		    // 
+			// cppmath::vec3 qvec = cppmath::vec3::cross(tvec, v0v1); 
+			// double v = cppmath::vec3::dot(r.direction(), qvec) * invDet; 
+			// if (v < 0 || u + v > 1) return tm; 
+		    // 
+			// double t = cppmath::vec3::dot(v0v2, qvec) * invDet; 
+		    // 
+			// tm.hit = 1;
+			// tm.normal = pvec;
+			// tm.distance = t;
+			// tm.location = r.point_at_parameter(t);
+			// std::cout << pvec << std::endl;
+			// return tm; 
 			
-			// Caculate normal to plane
-			TraceManifold tm;
-			tm.normal = cppmath::vec3::cross(ab, ac).norm();
+			///
 			
-			double ndd = cppmath::vec3::dot(tm.normal, r.direction());
+			// cppmath::vec3 ab = B - A;
+			// cppmath::vec3 ac = C - A;
+			// 
+			// // Caculate normal to plane
+			// TraceManifold tm;
+			// tm.normal = cppmath::vec3::cross(ab, ac).norm();
+			// 
+			// cppmath::vec3 tvec = cppmath::vec3::scoss(tm.normal, A);
+			// 
+			// double ndd = cppmath::vec3::dot(ab, tm.normal);
+			// 
+			// // No hit, parallel
+			// if (std::abs(ndd) <= 10e-8)
+			// 	return tm;
+			// 
+			// ndd = 1.0 / ndd;
+			// 
+			// cppmath::vec3 tv = r.origin() - A;
+			// double u = cppmath::vec3::dot(tv, tm.normal) * ndd;
+			// if (u < 0 || u > 1)
+			// 	return tm;
+			// 
+			// cppmath::vec3 qv = cppmath::vec3::cross(tv, ab);
+			// double v = cppmath::vec3::dot(r.direction(), qv) * ndd;
+			// if (v < 0 || u + v > 1)
+			// 	return tm;
+			// 
+			// tm.distance = cppmath::vec3::dot(ac, qv);
+			// tm.location = r.point_at_parameter(tm.distance);
+			// tm.hit = 1;
+			// 
+			// return tm;
 			
-			// No hit, parallel
-			if (std::abs(ndd) <= 10e-8)
-				return tm;
+			///
 			
-			tm.distance = cppmath::vec3::dot(tm.normal, A - r.origin()) / ndd;
+			// tm.distance = cppmath::vec3::dot(tm.normal, A - r.origin()) / ndd;
+			// 
+			// if (tm.distance < 10e-8)
+			// 	return tm;
+			// 
+			// tm.location = r.point_at_parameter(tm.distance);
+			// 
+			// cppmath::vec3 Ct;
+			// 
+			// cppmath::vec3 edge0 = B - A;
+			// cppmath::vec3 vp0 = tm.location - A;
+			// Ct = cppmath::vec3::cross(edge0, vp0);
+			// 
+			// // On the right side
+			// if (cppmath::vec3::dot(tm.normal, Ct) < 0)
+			// 	return tm;
+			// 
+			// cppmath::vec3 edge1 = C - B;
+			// cppmath::vec3 vp1 = tm.location - B;
+			// Ct = cppmath::vec3::cross(edge0, vp1);
+			// 
+			// // On the right side
+			// if (cppmath::vec3::dot(tm.normal, Ct) < 0)
+			// 	return tm;
+			// 
+			// cppmath::vec3 edge2 = A - C;
+			// cppmath::vec3 vp2 = tm.location - C;
+			// Ct = cppmath::vec3::cross(edge0, vp2);
+			// 
+			// // On the right side
+			// if (cppmath::vec3::dot(tm.normal, Ct) < 0)
+			// 	return tm;
+			// 
+			// std::cout << ab << ' ' << ac << ' ' << tm.normal << std::endl;
+			// tm.hit = 1;
+			// return tm;
 			
-			if (tm.distance < 10e-8)
-				return tm;
-			
-			tm.location = r.point_at_parameter(tm.distance);
-			
-			cppmath::vec3 Ct;
-			//std::cout << "PRE FRAG " << tm.location << std::endl;
-			
-			cppmath::vec3 edge0 = B - A;
-			cppmath::vec3 vp0 = tm.location - A;
-			Ct = cppmath::vec3::cross(edge0, vp0);
-			
-			// On the right side
-			if (cppmath::vec3::dot(tm.normal, Ct) < 0)
-				return tm;
-			//std::cout << "PRE FRAG1 " << tm.location << std::endl;
-			
-			cppmath::vec3 edge1 = C - B;
-			cppmath::vec3 vp1 = tm.location - B;
-			Ct = cppmath::vec3::cross(edge0, vp1);
-			
-			// On the right side
-			if (cppmath::vec3::dot(tm.normal, Ct) < 0)
-				return tm;
-			//std::cout << "PRE FRAG2 " << tm.location << std::endl;
-			
-			cppmath::vec3 edge2 = A - C;
-			cppmath::vec3 vp2 = tm.location - C;
-			Ct = cppmath::vec3::cross(edge0, vp2);
-			
-			// On the right side
-			if (cppmath::vec3::dot(tm.normal, Ct) < 0)
-				return tm;
-			//std::cout << "PRE FRAG3 " << tm.location << std::endl;
-			//std::cout << "FRAG" << std::endl;
-			tm.hit = 1;
-			return tm;
+			return TraceManifold();
 		};
 		
 		ObjectMaterial get_material(const cppmath::vec3& point) {
@@ -290,7 +338,6 @@ namespace raytrace {
 			return center;
 		};
 	};
-	*/
 	
 	class Plane : public SceneObject {
 		
