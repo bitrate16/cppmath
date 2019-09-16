@@ -48,3 +48,12 @@ example/evolvens
 example/z_buffer
 example/ImageBuffer_example
 example/cube
+example/raytrace
+output
+example/raytrace_images
+example/raytrace_temp
+example/raytrace_temp_multithread
+example/temp.txt
+bin/rawb2png
+example/temp
+example/temp.cpp

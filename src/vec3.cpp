@@ -253,6 +253,20 @@ vec3 vec3::rotateAroundVector(const vec3& v, const vec3& r, double angle) {
 	
 	return rot;
 };
+		
+vec3 vec3::get_orthogonal() const {
+	vec3 orthogonal;
+	if (x == .0 && y == .0 && z == .0)
+		return vec3::Zero;
+	
+	double d = x;
+	if (d < y)
+		d = y;
+	if (d < z)
+		d = z;
+	
+	return vec3(-y / d, 1, 0);
+};
 
 // C U S T O M _ O P E R A T O R S
 

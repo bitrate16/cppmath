@@ -116,6 +116,8 @@ namespace cppmath {
 		// Rotate vector v around vector v
 		static vec3 rotateAroundVector(const vec3& v, const vec3& r, double angle);
 		
+		vec3 get_orthogonal() const;
+		
 		/* Normalize the vector */
 		vec3 operator~();
 	

@@ -69,21 +69,34 @@ namespace raytrace {
 		double refract_val = 0.0;
 		// 0 : no diffuse color on light
 		double diffuse = 1.0;
+		// 0 : no light reflection on diffuse effect
+		double diffuse_reflect = 1.0;
 		// 0 : no light emission
 		double luminosity = 0.0;
 		// Set to 0 to avoid rendering surface for sphere lights
 		bool surface_visible = 1;
+		// Avioid light source emission light depent on frag angle
+		bool luminosity_scaling = 0;
 	};
 	
 	class SceneObject {
 		
 	public:
 		
+		// Must check for object hitting 
 		virtual TraceManifold hit(const ray& r) { return TraceManifold(); };
 		
+		// Must return object material at given point
 		virtual ObjectMaterial get_material(const cppmath::vec3& point) { return ObjectMaterial(); };
 		
+		// Must return object center
 		virtual cppmath::vec3 get_center() { return cppmath::vec3(); };
+		
+		// Must return list of points that are used in calculating light produced by this object
+		virtual std::vector<cppmath::vec3> get_light_points(const cppmath::vec3& ray_origin) { return {}; };
+		
+		// Must retirn normal at given point of object surface
+		virtual cppmath::vec3 normal_at(const cppmath::vec3& point) { return cppmath::vec3::Zero; };
 	};
 	
 	class Sphere : public SceneObject {
@@ -93,6 +106,7 @@ namespace raytrace {
 		double radius;
 		cppmath::vec3 center;
 		ObjectMaterial material;
+		int light_points_amount = 1;
 		
 		Sphere(const cppmath::vec3& center, double radius) {
 			set(center, radius);
@@ -138,6 +152,16 @@ namespace raytrace {
 		cppmath::vec3 get_center() {
 			return center;
 		};
+		
+		std::vector<cppmath::vec3> get_light_points(const cppmath::vec3& ray_origin) {
+			// std::vector<cppmath::vec3> points(light_points_amount);
+			// XXX: Generate n points on the normal hemisphere
+			return {center + (ray_origin - center).norm() * radius};
+		};
+		
+		cppmath::vec3 normal_at(const cppmath::vec3& point) {
+			return (point - center).norm();
+		};
 	};
 	
 	class UVSphere : public SceneObject {
@@ -149,6 +173,7 @@ namespace raytrace {
 		ObjectMaterial material;
 		// Maps uv texture
 		std::function<spaint::Color(double, double)> uv_map = [](double u, double v) -> spaint::Color { return spaint::Color(0); };
+		int light_points_amount = 1;
 		
 		UVSphere(const cppmath::vec3& center, double radius) {
 			set(center, radius);
@@ -201,6 +226,16 @@ namespace raytrace {
 		
 		cppmath::vec3 get_center() {
 			return center;
+		};
+	
+		std::vector<cppmath::vec3> get_light_points(const cppmath::vec3& ray_origin) {
+			// std::vector<cppmath::vec3> points(light_points_amount);
+			// XXX: Generate n points on the normal hemisphere
+			return {center + (ray_origin - center).norm() * radius};
+		};
+		
+		cppmath::vec3 normal_at(const cppmath::vec3& point) {
+			return (point - center).norm();
 		};
 	};
 	
@@ -345,6 +380,18 @@ namespace raytrace {
 		cppmath::vec3 location;
 		cppmath::vec3 normal;
 		ObjectMaterial material;
+		// Points will be generated in cone with top-to-normal angle with this cosine
+		double light_cone_max_angle_cos = 0.5;
+		// Radius of cone and angle is splitten into N sectors and in each sector light point is added
+		//      _____
+		//    /\     /\
+		//  /   \   /   \
+		// |--___\ /___--|
+		// |     _O_     |  light_cone_split_number = 6
+		// |__--- /\---__|   each sector also splitten into 6 sub-rings and into 
+		//  \   /   \   /     each of that ring point is being add.
+		//    \/_____\/ 
+		int light_cone_split_number = 1;
 		
 		Plane(const cppmath::vec3& location, const cppmath::vec3& normal) {
 			set(location, normal);
@@ -389,6 +436,16 @@ namespace raytrace {
 		cppmath::vec3 get_center() {
 			return location;
 		};
+	
+		std::vector<cppmath::vec3> get_light_points(const cppmath::vec3& ray_origin) {
+			// std::vector<cppmath::vec3> points(light_cone_max_angle_cos * light_cone_max_angle_cos);
+			// XXX: Generate n points on the normal circle
+			return {location};
+		};
+		
+		cppmath::vec3 normal_at(const cppmath::vec3& point) {
+			return normal;
+		};
 	};
 	
 	class UVPlane : public SceneObject {
@@ -399,6 +456,18 @@ namespace raytrace {
 		ObjectMaterial material;
 		// Maps uv texture
 		std::function<spaint::Color(double, double)> uv_map = [](double u, double v) -> spaint::Color { return spaint::Color(0); };
+		// Points will be generated in cone with top-to-normal angle with this cosine
+		double light_cone_max_angle_cos = 0.5;
+		// Radius of cone and angle is splitten into N sectors and in each sector light point is added
+		//      _____
+		//    /\     /\
+		//  /   \   /   \
+		// |--___\ /___--|
+		// |     _O_     |  light_cone_split_number = 6
+		// |__--- /\---__|   each sector also splitten into 6 sub-rings and into 
+		//  \   /   \   /     each of that ring point is being add.
+		//    \/_____\/ 
+		int light_cone_split_number = 1;
 		
 		UVPlane(const cppmath::vec3& location, const cppmath::vec3& normal) {
 			set(location, normal);
@@ -451,6 +520,16 @@ namespace raytrace {
 		cppmath::vec3 get_center() {
 			return location;
 		};
+	
+		std::vector<cppmath::vec3> get_light_points(const cppmath::vec3& ray_origin) {
+			// std::vector<cppmath::vec3> points(light_cone_max_angle_cos * light_cone_max_angle_cos);
+			// XXX: Generate n points on the normal circle
+			return {location};
+		};
+		
+		cppmath::vec3 normal_at(const cppmath::vec3& point) {
+			return normal;
+		};
 	};
 	
 	struct HitManifold {
@@ -476,6 +555,8 @@ namespace raytrace {
 		double RAY_SHIFT = 10e-6;
 		// Set soft shadows enabled
 		bool soft_shadows = 0;
+		// Enable shadows calculation
+		bool use_shadows = 0;
 		// Diffuse scale for light in shadow of an object
 		double soft_shadows_scale = 0.5;
 		// Enable diffuse light calculations
@@ -566,7 +647,8 @@ namespace raytrace {
 			if (closest_material.luminosity) {
 				hitm.color = closest_material.color;
 				hitm.color.scale(closest_material.luminosity);
-				hitm.color.scale(-cppmath::vec3::cos_between(closest_hit.normal, r.direction()));
+				if (closest_material.luminosity_scaling)
+					hitm.color.scale(-cppmath::vec3::cos_between(closest_hit.normal, r.direction()));
 			}
 			
 			// If traced object deffuses light from other light sources, than
@@ -581,76 +663,98 @@ namespace raytrace {
 					if (i == closest)
 						continue;
 					
-					ray l(closest_hit.location, (objects[i]->get_center() - closest_hit.location).norm());
-					TraceManifold trm = objects[i]->hit(l);
+					// Get all points of an object that can produce light
+					std::vector<cppmath::vec3> light_points = objects[i]->get_light_points(closest_hit.location);
 					
-					if (!trm.hit)
-						continue;
+					// Sum total lighting produced by object in it's lighting points
+					//  then divide by amount of lighting points
+					spaint::Color total_object_light;
 					
-					// Hard shadows or diffuse shadows
-					if (diffuse_light && !soft_shadows) {
-						// Check if there is no object that will overlap light source
-						bool overlap = 0;
-						for (int j = 0; j < objects.size(); ++j) {
-							if (i == j || j == closest)
-								continue;
-							
-							TraceManifold trmo = objects[j]->hit(l);
-							if (trmo.hit && trmo.distance >= 0 && trmo.distance < trm.distance) {
-								overlap = 1;
-								break;
-							}
-						}
+					// Iterate over all light points & calculate total light value from object
+					for (const cppmath::vec3& lp : light_points) {
+						ray l(closest_hit.location, (lp - closest_hit.location).norm());
 						
-						if (overlap)
-							continue;
-					}
-					
-					ObjectMaterial tmat = objects[i]->get_material(trm.location);
-					
-					// Calculate amount of light emitted by objects[i]
-					if (tmat.luminosity > 0) {
-						spaint::Color lumine = tmat.color;
-						lumine.scale(closest_material.color);
-						lumine.scale(tmat.luminosity);
-						lumine.scale(closest_material.diffuse);
-						lumine.scale(-cppmath::vec3::cos_between(closest_hit.normal, trm.normal));
+						// Distance to light point
+						double lp_distance = (lp - closest_hit.location).len();
 						
-						if (soft_shadows) {
-							// Check for all overlapping objects & scale light 
-							//  by cos between ray to object and ray to light
-							// i.e.: Iterate over all objects and calculate total shadow value in shadow.
-							double shadow_cos = 1.0;
+						// If shadows are enabled, calculate them
+						if (use_shadows && (diffuse_light || !soft_shadows)) {
+							// Check if there is no object that will overlap light source
+							bool overlap = 0;
 							for (int j = 0; j < objects.size(); ++j) {
 								if (i == j || j == closest)
 									continue;
 								
 								TraceManifold trmo = objects[j]->hit(l);
-								if (trmo.hit && trmo.distance >= 0 && trmo.distance < trm.distance) {
-									ObjectMaterial mato = objects[i]->get_material(trmo.location);
-									double cs = cppmath::vec3::cos_between(l.direction(), trmo.normal);
-									cs = cs < 0 ? -cs : cs;
-									cs *= cppmath::vec3::cos_between(l.direction(), (objects[i]->get_center() - l.origin()).norm());
-									cs *= (1.0 - mato.refract);
-									cs *= (1.0 - soft_shadows_scale);
-									shadow_cos -= cs;
+								ObjectMaterial tmo = objects[j]->get_material(trmo.location);
+								if (tmo.surface_visible && trmo.hit && trmo.distance >= 0 && trmo.distance < lp_distance) {
+									overlap = 1;
+									break;
 								}
 							}
 							
-							// Apply light in shadow
-							shadow_cos = shadow_cos < 0 ? 0.0 : (shadow_cos > 1.0 ? 1.0 : shadow_cos);
-							lumine.scale(shadow_cos);
+							// If rays overlap some object, just do nothing
+							if (overlap)
+								continue;
 						}
 						
-						// Apply color affect on surface
-						lighting += lumine;
+						ObjectMaterial tmat = objects[i]->get_material(lp);
+					
+						// Calculate amount of light emitted by objects[i]
+						if (tmat.luminosity > 0) {
+							spaint::Color lumine = tmat.color;
+							// Apply object color mask
+							lumine.scale(closest_material.color);
+							// Apply frag object emission value
+							lumine.scale(tmat.luminosity);
+							// Apply material light diffuse value
+							lumine.scale(closest_material.diffuse);
+							// Scale by normal between source and surface
+							lumine.scale(-cppmath::vec3::cos_between(closest_hit.normal, objects[i]->normal_at(lp)));
+							
+							// Calculate fake soft shadows
+							if (soft_shadows) {								
+								// Check for all overlapping objects & scale light 
+								//  by cos between ray to object and ray to light
+								// i.e.: Iterate over all objects and calculate total shadow value in shadow.
+								double shadow_cos = 1.0;
+								for (int j = 0; j < objects.size(); ++j) {
+									if (i == j || j == closest)
+										continue;
+									
+									TraceManifold trmo = objects[j]->hit(l);
+									ObjectMaterial tmo = objects[j]->get_material(trmo.location);
+									if (tmo.surface_visible && trmo.hit && trmo.distance >= 0 && trmo.distance < lp_distance) {
+										ObjectMaterial mato = objects[i]->get_material(trmo.location);
+										double cs = cppmath::vec3::cos_between(l.direction(), trmo.normal);
+										cs = cs < 0 ? -cs : cs;
+										cs *= cppmath::vec3::cos_between(l.direction(), (objects[i]->get_center() - l.origin()).norm());
+										cs *= (1.0 - mato.refract);
+										cs *= (1.0 - soft_shadows_scale);
+										shadow_cos -= cs;
+									}
+								}
+								
+								// Apply light in shadow
+								shadow_cos = shadow_cos < 0 ? 0.0 : (shadow_cos > 1.0 ? 1.0 : shadow_cos);
+								lumine.scale(shadow_cos);
+							}
+							
+							// Apply color affect on surface
+							total_object_light.add_off_range(lumine);
+						}
 					}
+						
+					// Scale by amount of light poimts
+					total_object_light.scale(1.0 / (double) light_points.size());
+					// apply resulting light to surface
+					lighting += total_object_light;
 				}
-				
+					
 				// Apply lighting in shadows and direct light
 				hitm.color += lighting;
-				
-				// Cast rays in parametrized directions to collect summary diffuse
+					
+				// Calculatre real diffuse light from all other objects by shooting big amount of rays
 				if (diffuse_light) {					
 					if (!random_diffuse_ray) {
 						// Shoot rays in any directions to calculate diffuse light amount from reflections of other objects

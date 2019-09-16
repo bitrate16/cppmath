@@ -47,6 +47,7 @@ class scene : public component {
 		rt.set_background(Color::BLACK);
 		rt.get_scene().soft_shadows = 1;
 		//rt.get_scene().diffuse_light = 1;
+		rt.get_scene().use_shadows = 1;
 		rt.get_scene().soft_shadows_scale = 0.5;
 		rt.get_scene().random_diffuse_ray = 1;
 		rt.get_scene().random_diffuse_count = 8;
@@ -54,7 +55,7 @@ class scene : public component {
 		
 		
 		// Surrounding
-		/*Plane* red_plane = new Plane(vec3(0, -50, 0) * SCALE, vec3(0, 1, 0));
+		Plane* red_plane = new Plane(vec3(0, -50, 0) * SCALE, vec3(0, 1, 0));
 		red_plane->material.color = Color::WHITE;
 		red_plane->material.diffuse = 1.0;
 		rt.get_scene().addObject(red_plane);
@@ -82,7 +83,7 @@ class scene : public component {
 		Plane* magenta_plane = new Plane(vec3(0, 0, -50) * SCALE, vec3(0, 0, 1));
 		magenta_plane->material.color = Color::WHITE;
 		magenta_plane->material.diffuse = 1.0;
-		rt.get_scene().addObject(magenta_plane);*/
+		rt.get_scene().addObject(magenta_plane);
 		
 		/*
 		// Light
@@ -103,7 +104,7 @@ class scene : public component {
 		
 		
 		// Spheres
-		/*Sphere* red_sphere = new Sphere(vec3(20, 20, 120) * SCALE, 5 * SCALE);
+		Sphere* red_sphere = new Sphere(vec3(20, 20, 120) * SCALE, 5 * SCALE);
 		red_sphere->material.color = Color::RED;
 		red_sphere->material.luminosity = 0.0;
 		rt.get_scene().addObject(red_sphere);
@@ -119,9 +120,22 @@ class scene : public component {
 		light_sphere->material.surface_visible = 0;
 		rt.get_scene().addObject(light_sphere);
 		
+		light_sphere = new Sphere(vec3(-10, 20, 80) * SCALE, 5 * SCALE);
+		light_sphere->material.color = Color::RED;
+		light_sphere->material.luminosity = 0.1;
+		light_sphere->material.surface_visible = 0;
+		rt.get_scene().addObject(light_sphere);
+		
+		light_sphere = new Sphere(vec3(20, -20, 100) * SCALE, 10 * SCALE);
+		light_sphere->material.color = Color::BLUE;
+		light_sphere->material.luminosity = 0.2;
+		light_sphere->material.surface_visible = 0;
+		rt.get_scene().addObject(light_sphere);
+		
 		Sphere* white_sphere = new Sphere(vec3(10, 0, 100) * SCALE, 10 * SCALE);
 		white_sphere->material.color = Color::WHITE;
-		white_sphere->material.reflect = 1.0;
+		white_sphere->material.reflect = 0.9;
+		white_sphere->material.diffuse = 0.1;
 		rt.get_scene().addObject(white_sphere);
 		
 		Sphere* glass_sphere = new Sphere(vec3(-5, -5, 50) * SCALE, 10 * SCALE);
@@ -129,7 +143,8 @@ class scene : public component {
 		glass_sphere->material.refract = 0.9;
 		glass_sphere->material.refract_val = 3.3;
 		glass_sphere->material.reflect = 0.1;
-		rt.get_scene().addObject(glass_sphere);*/
+		glass_sphere->material.diffuse = 0.1;
+		rt.get_scene().addObject(glass_sphere);
 		
 		
 		/*Triangle* red_triangle = new Triangle(vec3(20, 10, 90), vec3(10, 20, 90), vec3(30, 20, 90));

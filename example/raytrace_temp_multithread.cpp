@@ -47,9 +47,9 @@ using namespace raytrace;
 
 // #define ANTI_ALIASING
 
-#define WIDTH 250
-#define HEIGHT 250
-#define SCALE 1
+#define WIDTH 1000
+#define HEIGHT 1000
+#define SCALE 4
 
 // bash c.sh "-lpthread" example/raytrace_temp_multithread
 
@@ -165,6 +165,18 @@ public:
 		light_sphere->material.surface_visible = 0;
 		rt.get_scene().addObject(light_sphere);
 		
+		light_sphere = new Sphere(vec3(-10, 20, 60) * SCALE, 5 * SCALE);
+		light_sphere->material.color = Color::RED;
+		light_sphere->material.luminosity = 0.2;
+		light_sphere->material.surface_visible = 0;
+		rt.get_scene().addObject(light_sphere);
+		
+		light_sphere = new Sphere(vec3(20, -20, 100) * SCALE, 10 * SCALE);
+		light_sphere->material.color = Color::BLUE;
+		light_sphere->material.luminosity = 0.2;
+		light_sphere->material.surface_visible = 0;
+		rt.get_scene().addObject(light_sphere);
+		
 		Sphere* white_sphere = new Sphere(vec3(10, 0, 100) * SCALE, 10 * SCALE);
 		white_sphere->material.color = Color::WHITE;
 		white_sphere->material.reflect = 0.9;
@@ -176,6 +188,7 @@ public:
 		glass_sphere->material.refract = 0.9;
 		glass_sphere->material.refract_val = 3.3;
 		glass_sphere->material.reflect = 0.1;
+		glass_sphere->material.diffuse = 0.1;
 		rt.get_scene().addObject(glass_sphere);
 	
 		UVSphere* uv_sphere = new UVSphere(vec3(30, 20, 90) * SCALE, 10 * SCALE);
@@ -259,83 +272,70 @@ void worker_function(tracer* t, int thread_id) {
 	
 	// Do rendering
 	while (1) {
-		int x, y;
-		{
-			std::unique_lock<std::mutex> locker(t->index_access);
-			if (t->x == t->rt.get_width() - 1) {
-				t->x = 0;
-				++t->y;
-				
-				std::cout << (t->y + 1) << " / " << t->rt.get_width() << std::endl;
-				// std::cout << "Thread " << thread_id << std::endl;
-			}
-			if (t->y >= t->rt.get_height()) {
-				++t->finshed_threads;
-				
-				if (!t->written) {
-					t->written = 1;
-					std::cout << "DONE\n";
-					
-				#ifndef WRITE_BINARY
-					t->encodeOneStep(FILENAME, (unsigned char*) t->frame, WIDTH, HEIGHT);
-				#else
-					uint32_t order_test = 0x01020304;
-					uint32_t width = WIDTH;
-					uint32_t height = HEIGHT;
-					uint8_t pix_type = rawb::pixel_type::ABGR;
-					t->binary_file.write((char*) &order_test, 4);
-					t->binary_file.write((char*) &width, 4);
-					t->binary_file.write((char*) &height, 4);
-					t->binary_file.write((char*) &pix_type, 1);
-					t->binary_file.write((char*) t->frame, (size_t) WIDTH * (size_t) HEIGHT * (size_t) 4);
-					t->binary_file.flush();
-				#endif
-				
-					std::cout << "WRITTEN\n";
-					
-					exit(0);
-				}
-				
-				// Wake main after all threads finished
-				/*if (t->finshed_threads == THREAD_COUNT) {
+		t->index_access.lock();
 		
-					std::cout << "DONE\n";
-					
-					t->encodeOneStep(FILENAME, (unsigned char*) t->frame, WIDTH, HEIGHT);
-								
-					std::cout << "WRITTEN\n";
-					
-					t->cv.notify_all();
-				}*/
+		// If render is finished, dump file
+		if (t->y >= t->rt.get_height() + THREAD_COUNT - 1) {
+			++t->finshed_threads;
+			
+			if (!t->written) {
+				t->written = 1;
+				std::cout << "DONE\n";
 				
-				std::cout << "Thread " << thread_id << " stopped" << std::endl;
-				return;
+			#ifndef WRITE_BINARY
+				t->encodeOneStep(FILENAME, (unsigned char*) t->frame, WIDTH, HEIGHT);
+			#else
+				uint32_t order_test = 0x01020304;
+				uint32_t width = WIDTH;
+				uint32_t height = HEIGHT;
+				uint8_t pix_type = rawb::pixel_type::ABGR;
+				t->binary_file.write((char*) &order_test, 4);
+				t->binary_file.write((char*) &width, 4);
+				t->binary_file.write((char*) &height, 4);
+				t->binary_file.write((char*) &pix_type, 1);
+				t->binary_file.write((char*) t->frame, (size_t) WIDTH * (size_t) HEIGHT * (size_t) 4);
+				t->binary_file.flush();
+			#endif
+			
+				std::cout << "WRITTEN\n";
+				
+				exit(0);
 			}
 			
-			x = t->x;
-			y = t->y;
-			++t->x;
-			
-			locker.unlock();
+			std::cout << "Thread " << thread_id << " stopped" << std::endl;
+			return;
+		} else if (t->y >= t->rt.get_height()) {
+			++t->y;
+			t->index_access.unlock();
+			break;
 		}
 		
-		// std::cout << "Thread " << thread_id << " --> (" << x << ", " << y << ")" << std::endl;
+		std::cout << (t->y + 1) << " / " << t->rt.get_width() << std::endl;
+		
+		int y = t->y;
+		++t->y;
+		
+		t->index_access.unlock();
 		
 #ifdef ANTI_ALIASING
-		Color frag;
-		frag.add_off_range(t->rt.hitColorAt(x + 1, y + 1));
-		frag.add_off_range(t->rt.hitColorAt(x + 1, y + 0));
-		frag.add_off_range(t->rt.hitColorAt(x + 0, y + 1));
-		frag.add_off_range(t->rt.hitColorAt(x + 0, y + 0));
-		
-		frag.scale(0.25);
-		
-		frag.a = 255;
-		t->frame[x + y * WIDTH] = frag.abgr();
+		for (int x = 0; x < t->rt.get_width(); ++x) {
+			Color frag;
+			frag.add_off_range(t->rt.hitColorAt(x + 1, y + 1));
+			frag.add_off_range(t->rt.hitColorAt(x + 1, y + 0));
+			frag.add_off_range(t->rt.hitColorAt(x + 0, y + 1));
+			frag.add_off_range(t->rt.hitColorAt(x + 0, y + 0));
+			
+			frag.scale(0.25);
+			
+			frag.a = 255;
+			t->frame[x + y * WIDTH] = frag.abgr();
+		}
 #else
-		Color frag = t->rt.hitColorAt(x, y);
-		frag.a = 255;
-		t->frame[x + y * WIDTH] = frag.abgr();
+		for (int x = 0; x < t->rt.get_width(); ++x) {
+			Color frag = t->rt.hitColorAt(x, y);
+			frag.a = 255;
+			t->frame[x + y * WIDTH] = frag.abgr();
+		}
 #endif
 	}
 };
