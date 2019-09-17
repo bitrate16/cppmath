@@ -84,6 +84,18 @@ public:
 		file.read((char*) &pix_type, 1);
 		p_type = (pixel_type) pix_type;
 		
+		// Check if pixel format is valid
+		switch (p_type) {
+			case pixel_type::RGBA:
+			case pixel_type::ARGB:
+			case pixel_type::BGRA:
+			case pixel_type::ABGR:
+				break;
+				
+			default:
+				throw std::runtime_error("Pixel format error");
+		};
+		
 		if (file.fail()){
 			file.close();
 			throw std::runtime_error("File format error");

@@ -43,13 +43,13 @@ using namespace raytrace;
 
 #define THREAD_COUNT 4
 
-// #define WRITE_BINARY
+#define WRITE_BINARY
 
 // #define ANTI_ALIASING
 
-#define WIDTH 1000
-#define HEIGHT 1000
-#define SCALE 4
+#define WIDTH 2500
+#define HEIGHT 2500
+#define SCALE 10
 
 // bash c.sh "-lpthread" example/raytrace_temp_multithread
 
