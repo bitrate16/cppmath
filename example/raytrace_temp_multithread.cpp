@@ -43,7 +43,7 @@ using namespace raytrace;
 
 #define THREAD_COUNT 4
 
-#define WRITE_BINARY
+// #define WRITE_BINARY
 
 // #define ANTI_ALIASING
 
@@ -98,11 +98,14 @@ public:
 	#endif
 		
 		frame = (unsigned int*) malloc((size_t) WIDTH * (size_t) HEIGHT * (size_t) 4);
+		
+		create_scene();
 	
 		for (int i = 0; i < THREAD_COUNT; ++i)
 			threads[i] = new std::thread(worker_function, this, i);
 		
-		create_scene();
+		for (int i = 0; i < THREAD_COUNT; ++i)
+			threads[i]->join();
 	};
 	
 	void create_scene() {
@@ -110,10 +113,12 @@ public:
 		
 		rt.camera = Camera(WIDTH, HEIGHT);
 		rt.set_background(Color::BLACK);
-		rt.get_scene().soft_shadows = 1;
-		//rt.get_scene().diffuse_light = 1;
+		// rt.get_scene().soft_shadows = 1;
+		// rt.get_scene().diffuse_light = 1;
+		rt.get_scene().use_shadows = 1;
 		rt.get_scene().soft_shadows_scale = 0.5;
 		rt.get_scene().random_diffuse_ray = 1;
+		rt.get_scene().average_light_points = 1;
 		rt.get_scene().random_diffuse_count = 8;
 		rt.get_scene().MAX_RAY_DEPTH = 4;
 		
@@ -159,23 +164,27 @@ public:
 		green_sphere->material.luminosity = 0.0;
 		rt.get_scene().addObject(green_sphere);
 		
-		Sphere* light_sphere = new Sphere(vec3(0, 20, 80) * SCALE, 5 * SCALE);
+		Sphere* light_sphere = new Sphere(vec3(0, 20, 80) * SCALE, 10 * SCALE);
 		light_sphere->material.color = Color::WHITE;
 		light_sphere->material.luminosity = 1.0;
 		light_sphere->material.surface_visible = 0;
+		light_sphere->material.luminosity_scaling = 1;
+		light_sphere->light_sectors_amount = 16;
 		rt.get_scene().addObject(light_sphere);
 		
-		light_sphere = new Sphere(vec3(-10, 20, 60) * SCALE, 5 * SCALE);
+		/*light_sphere = new Sphere(vec3(-10, 20, 60) * SCALE, 5 * SCALE);
 		light_sphere->material.color = Color::RED;
 		light_sphere->material.luminosity = 0.2;
 		light_sphere->material.surface_visible = 0;
+		light_sphere->light_sectors_amount = 16;
 		rt.get_scene().addObject(light_sphere);
 		
 		light_sphere = new Sphere(vec3(20, -20, 100) * SCALE, 10 * SCALE);
 		light_sphere->material.color = Color::BLUE;
 		light_sphere->material.luminosity = 0.2;
 		light_sphere->material.surface_visible = 0;
-		rt.get_scene().addObject(light_sphere);
+		light_sphere->light_sectors_amount = 16;
+		rt.get_scene().addObject(light_sphere);*/
 		
 		Sphere* white_sphere = new Sphere(vec3(10, 0, 100) * SCALE, 10 * SCALE);
 		white_sphere->material.color = Color::WHITE;
@@ -245,30 +254,10 @@ public:
 		/*if there's an error, display it*/
 		if(error) printf("error %u: %s\n", error, lodepng_error_text(error));
 	};
-	
-	void render() {
-		std::cout << "RENDERING\n";
-		
-		/*std::unique_lock<std::mutex> locker(waiter);
-		cv.notify_all();
-		cv.wait(locker);*/
-		
-		cv.notify_all();
-		
-		for (int i = 0; i < THREAD_COUNT; ++i)
-			threads[i]->join();
-	};
 };
 
 void worker_function(tracer* t, int thread_id) {
 	std::cout << "Thread " << thread_id << " created" << std::endl;
-	
-	// Wait for main thread to start tracer
-	{ 
-		std::unique_lock<std::mutex> locker(t->waiter);
-		t->cv.wait(locker);
-		std::cout << "Thread " << thread_id << " started" << std::endl;
-	}
 	
 	// Do rendering
 	while (1) {
@@ -343,7 +332,6 @@ void worker_function(tracer* t, int thread_id) {
 int main() {
 	
 	tracer t;
-	t.render();
 	
 	return 0;
 };

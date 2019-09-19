@@ -106,7 +106,7 @@ namespace raytrace {
 		double radius;
 		cppmath::vec3 center;
 		ObjectMaterial material;
-		int light_points_amount = 1;
+		int light_sectors_amount = 1;
 		
 		Sphere(const cppmath::vec3& center, double radius) {
 			set(center, radius);
@@ -156,7 +156,44 @@ namespace raytrace {
 		std::vector<cppmath::vec3> get_light_points(const cppmath::vec3& ray_origin) {
 			// std::vector<cppmath::vec3> points(light_points_amount);
 			// XXX: Generate n points on the normal hemisphere
-			return {center + (ray_origin - center).norm() * radius};
+			light_sectors_amount = light_sectors_amount <= 0 ? 1 : light_sectors_amount;
+			
+			if (light_sectors_amount == 1)
+				return {center + (ray_origin - center).norm() * radius};
+			
+			// Iterate over hemisphere and return set of points
+			std::vector<cppmath::vec3> points(light_sectors_amount * light_sectors_amount * 4 + 1);
+			
+			cppmath::vec3 n = (ray_origin - center).norm();
+			cppmath::vec3 u = n.get_orthogonal().norm();
+			cppmath::vec3 v = cppmath::vec3::cross(n, u).norm();
+
+				//std::cout << "n = " << n << std::endl;
+				//std::cout << "u = " << u << std::endl;
+				//std::cout << "v = " << v << std::endl;
+				
+			double angle_step_n = 3.14159265358979323846 / 2.0 / (double) light_sectors_amount;
+			double angle_step_uv = 3.14159265358979323846 * 2.0 / (double) (light_sectors_amount * 4);
+			
+			int i = 0;
+			double uv_angle = 0.0;
+			double n_angle = 0.0;
+			
+			for (int f = 0; f < light_sectors_amount; ++f) {
+				for (int t = 0; t < light_sectors_amount * 4; ++t) {
+					double cs_n = std::cos(n_angle);
+					points[i++] = center + (u * cs_n * std::cos(uv_angle) + v * cs_n * std::sin(uv_angle) + n * std::sin(n_angle)).norm() * radius;
+					
+					uv_angle += angle_step_uv;
+				}
+				
+				uv_angle = 0.0;
+				n_angle += angle_step_n;
+			}
+			
+			points[points.size() - 1] = center + (ray_origin - center).norm() * radius;
+			
+			return points;
 		};
 		
 		cppmath::vec3 normal_at(const cppmath::vec3& point) {
@@ -239,10 +276,11 @@ namespace raytrace {
 		};
 	};
 	
-	/*class Triangle : public SceneObject {
+	class Triangle : public SceneObject {
 		
 	public:
 		cppmath::vec3 center;
+		cppmath::vec3 normal;
 		cppmath::vec3 A, B, C;
 		ObjectMaterial material;
 		
@@ -255,6 +293,7 @@ namespace raytrace {
 			B = b;
 			C = c;
 			center = (A + B + C) / 3.0;
+			normal = cppmath::vec3::cross(B - A, C - A).norm(); 
 		};
 		
 		void setMaterial(const ObjectMaterial& material) {
@@ -262,107 +301,38 @@ namespace raytrace {
 		};
 		
 		TraceManifold hit(const ray& r) {
-			// TraceManifold tm;
-			// cppmath::vec3 v0v1 = B - A; 
-			// cppmath::vec3 v0v2 = C - A; 
-			// cppmath::vec3 pvec = cppmath::vec3::cross(v0v1, v0v2); 
-			// double det = cppmath::vec3::dot(v0v1, pvec); 
-			// 
-			// if (fabs(det) < 10e-8) return tm; 
-			// double invDet = 1 / det; 
-		    // 
-			// cppmath::vec3 tvec = r.origin() - A; 
-			// double u = cppmath::vec3::dot(tvec, pvec) * invDet; 
-			// if (u < 0 || u > 1) return tm; 
-		    // 
-			// cppmath::vec3 qvec = cppmath::vec3::cross(tvec, v0v1); 
-			// double v = cppmath::vec3::dot(r.direction(), qvec) * invDet; 
-			// if (v < 0 || u + v > 1) return tm; 
-		    // 
-			// double t = cppmath::vec3::dot(v0v2, qvec) * invDet; 
-		    // 
-			// tm.hit = 1;
-			// tm.normal = pvec;
-			// tm.distance = t;
-			// tm.location = r.point_at_parameter(t);
-			// std::cout << pvec << std::endl;
-			// return tm; 
+			TraceManifold tm;
 			
-			///
+			cppmath::vec3 ba = B - A;
+			cppmath::vec3 ca = C - A;
 			
-			// cppmath::vec3 ab = B - A;
-			// cppmath::vec3 ac = C - A;
-			// 
-			// // Caculate normal to plane
-			// TraceManifold tm;
-			// tm.normal = cppmath::vec3::cross(ab, ac).norm();
-			// 
-			// cppmath::vec3 tvec = cppmath::vec3::scoss(tm.normal, A);
-			// 
-			// double ndd = cppmath::vec3::dot(ab, tm.normal);
-			// 
-			// // No hit, parallel
-			// if (std::abs(ndd) <= 10e-8)
-			// 	return tm;
-			// 
-			// ndd = 1.0 / ndd;
-			// 
-			// cppmath::vec3 tv = r.origin() - A;
-			// double u = cppmath::vec3::dot(tv, tm.normal) * ndd;
-			// if (u < 0 || u > 1)
-			// 	return tm;
-			// 
-			// cppmath::vec3 qv = cppmath::vec3::cross(tv, ab);
-			// double v = cppmath::vec3::dot(r.direction(), qv) * ndd;
-			// if (v < 0 || u + v > 1)
-			// 	return tm;
-			// 
-			// tm.distance = cppmath::vec3::dot(ac, qv);
-			// tm.location = r.point_at_parameter(tm.distance);
-			// tm.hit = 1;
-			// 
-			// return tm;
+			// It's not fucking normal vector suka blyat
+			cppmath::vec3 pv = cppmath::vec3::cross(r.direction(), ca);;
 			
-			///
+			double det = cppmath::vec3::dot(ba, pv);
 			
-			// tm.distance = cppmath::vec3::dot(tm.normal, A - r.origin()) / ndd;
-			// 
-			// if (tm.distance < 10e-8)
-			// 	return tm;
-			// 
-			// tm.location = r.point_at_parameter(tm.distance);
-			// 
-			// cppmath::vec3 Ct;
-			// 
-			// cppmath::vec3 edge0 = B - A;
-			// cppmath::vec3 vp0 = tm.location - A;
-			// Ct = cppmath::vec3::cross(edge0, vp0);
-			// 
-			// // On the right side
-			// if (cppmath::vec3::dot(tm.normal, Ct) < 0)
-			// 	return tm;
-			// 
-			// cppmath::vec3 edge1 = C - B;
-			// cppmath::vec3 vp1 = tm.location - B;
-			// Ct = cppmath::vec3::cross(edge0, vp1);
-			// 
-			// // On the right side
-			// if (cppmath::vec3::dot(tm.normal, Ct) < 0)
-			// 	return tm;
-			// 
-			// cppmath::vec3 edge2 = A - C;
-			// cppmath::vec3 vp2 = tm.location - C;
-			// Ct = cppmath::vec3::cross(edge0, vp2);
-			// 
-			// // On the right side
-			// if (cppmath::vec3::dot(tm.normal, Ct) < 0)
-			// 	return tm;
-			// 
-			// std::cout << ab << ' ' << ac << ' ' << tm.normal << std::endl;
-			// tm.hit = 1;
-			// return tm;
+			if (det < 1e-8 && det > -1e-8)
+				return tm;
 			
-			return TraceManifold();
+			double inv_det = 1.0 / det;
+			cppmath::vec3 tv = r.origin() - A;
+			
+			double u = cppmath::vec3::dot(tv, pv) * inv_det;
+			if (u < 0 || u > 1)
+				return tm;
+			
+			cppmath::vec3 qv = cppmath::vec3::cross(tv, ba);
+			
+			double v = cppmath::vec3::dot(r.direction(), qv) * inv_det;
+			if (v < 0 || u + v > 1)
+				return tm;
+			
+			tm.normal = normal;
+			tm.distance = cppmath::vec3::dot(ca, qv) * inv_det;
+			tm.hit = 1;
+			tm.location = r.point_at_parameter(tm.distance);
+			
+			return tm;
 		};
 		
 		ObjectMaterial get_material(const cppmath::vec3& point) {
@@ -372,7 +342,15 @@ namespace raytrace {
 		cppmath::vec3 get_center() {
 			return center;
 		};
-	};*/
+		
+		std::vector<cppmath::vec3> get_light_points(const cppmath::vec3& ray_origin) {
+			return {center};
+		};
+		
+		cppmath::vec3 normal_at(const cppmath::vec3& point) {
+			return normal; 
+		};
+	};
 	
 	class Plane : public SceneObject {
 		
@@ -573,6 +551,8 @@ namespace raytrace {
 		int vertical_diffuse_count = 4;
 		// Maximal ray recursion depth
 		int MAX_RAY_DEPTH = -1;
+		// When calculating light from many light point of a single object average summary amount of light
+		bool average_light_points = 0;
 	
 		~RayTraceScene() {
 			for (int i = 0; i < objects.size(); ++i)
@@ -730,7 +710,7 @@ namespace raytrace {
 										cs = cs < 0 ? -cs : cs;
 										cs *= cppmath::vec3::cos_between(l.direction(), (objects[i]->get_center() - l.origin()).norm());
 										cs *= (1.0 - mato.refract);
-										cs *= (1.0 - soft_shadows_scale);
+										cs *= soft_shadows_scale;
 										shadow_cos -= cs;
 									}
 								}
@@ -746,7 +726,9 @@ namespace raytrace {
 					}
 						
 					// Scale by amount of light poimts
-					total_object_light.scale(1.0 / (double) light_points.size());
+					if (average_light_points)
+						total_object_light.scale(1.0 / (double) light_points.size());
+					
 					// apply resulting light to surface
 					lighting += total_object_light;
 				}

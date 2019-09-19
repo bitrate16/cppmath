@@ -48,11 +48,17 @@ class scene : public component {
 		rt.get_scene().soft_shadows = 1;
 		//rt.get_scene().diffuse_light = 1;
 		rt.get_scene().use_shadows = 1;
-		rt.get_scene().soft_shadows_scale = 0.5;
+		rt.get_scene().average_light_points = 1;
+		rt.get_scene().soft_shadows_scale = 1.0;
 		rt.get_scene().random_diffuse_ray = 1;
 		rt.get_scene().random_diffuse_count = 8;
 		rt.get_scene().MAX_RAY_DEPTH = 4;
 		
+		// Triangles
+		Triangle* red_triangle = new Triangle(vec3(-10, 30, 149) * SCALE, vec3(-15, 25, 149) * SCALE, vec3(-15, 35, 149) * SCALE);
+		red_triangle->material.color = Color::RED;
+		red_triangle->material.diffuse = 1.0;
+		rt.get_scene().addObject(red_triangle);
 		
 		// Surrounding
 		Plane* red_plane = new Plane(vec3(0, -50, 0) * SCALE, vec3(0, 1, 0));
@@ -101,7 +107,7 @@ class scene : public component {
 		green_sphere->material.color = Color::GREEN;
 		rt.get_scene().addObject(green_sphere);
 		*/
-		
+	
 		
 		// Spheres
 		Sphere* red_sphere = new Sphere(vec3(20, 20, 120) * SCALE, 5 * SCALE);
@@ -117,7 +123,9 @@ class scene : public component {
 		Sphere* light_sphere = new Sphere(vec3(0, 20, 80) * SCALE, 5 * SCALE);
 		light_sphere->material.color = Color::WHITE;
 		light_sphere->material.luminosity = 1.0;
-		light_sphere->material.surface_visible = 0;
+		light_sphere->material.surface_visible = 1;
+		light_sphere->material.luminosity_scaling = 1;
+		light_sphere->light_sectors_amount = 2;
 		rt.get_scene().addObject(light_sphere);
 		
 		light_sphere = new Sphere(vec3(-10, 20, 80) * SCALE, 5 * SCALE);
@@ -131,6 +139,7 @@ class scene : public component {
 		light_sphere->material.luminosity = 0.2;
 		light_sphere->material.surface_visible = 0;
 		rt.get_scene().addObject(light_sphere);
+		
 		
 		Sphere* white_sphere = new Sphere(vec3(10, 0, 100) * SCALE, 10 * SCALE);
 		white_sphere->material.color = Color::WHITE;
@@ -219,9 +228,8 @@ class scene : public component {
 				mouse_down = 0;
 			
 		w.clear_events();
-			
+		
 		if (resized || updated) {
-			
 			resized = 0;
 			updated = 0;
 			
@@ -238,14 +246,22 @@ class scene : public component {
 					}
 				}
 				
-				std::cout << "DONE\n";
-				
-				rt.camera.location.z += 1.0;
+			std::cout << "DONE\n";
+			
+			rt.camera.location.z += 1.0;
 				
 		} else if (mouse_down) {
 			window::pointer point = w.get_pointer();
-			int x = point.x ;
-			int y = point.y ;
+			int x = point.x / PIXEL_SCALE;
+			int y = point.y / PIXEL_SCALE;
+			
+			/*Color frag = rt.hitColorAt(x, y);
+			if (frag != Color::BLACK) {
+				p.color(frag);				
+				for (int sx = 0; sx < PIXEL_SCALE; ++sx)
+					for (int sy = 0; sy < PIXEL_SCALE; ++sy)
+						p.point(x * PIXEL_SCALE + sx, y * PIXEL_SCALE + sy);
+			}*/
 			
 			rt.camera.width = WIDTH * PIXEL_SCALE;
 			rt.camera.height = HEIGHT * PIXEL_SCALE;

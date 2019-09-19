@@ -258,14 +258,21 @@ vec3 vec3::get_orthogonal() const {
 	vec3 orthogonal;
 	if (x == .0 && y == .0 && z == .0)
 		return vec3::Zero;
+	else if (x == .0)
+		return vec3::X;
+	else if (y == .0)
+			return vec3::Y;
+	else if (z == .0)
+			return vec3::Z;
+		
+	if (x >= y && x >= z) 
+		return vec3(-y / x, 1, 0);
+	if (y >= x && y >= z)
+		return vec3(1, -x / y, 0);
+	if (z >= x && z >= y)
+		return vec3(0, 1, -y / z);
 	
-	double d = x;
-	if (d < y)
-		d = y;
-	if (d < z)
-		d = z;
-	
-	return vec3(-y / d, 1, 0);
+	return vec3();
 };
 
 // C U S T O M _ O P E R A T O R S
