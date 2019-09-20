@@ -43,13 +43,13 @@ using namespace raytrace;
 
 #define THREAD_COUNT 4
 
-// #define WRITE_BINARY
+#define WRITE_BINARY
 
 // #define ANTI_ALIASING
 
-#define WIDTH 2500
-#define HEIGHT 2500
-#define SCALE 10
+#define WIDTH 1000
+#define HEIGHT 1000
+#define SCALE 4
 
 // bash c.sh "-lpthread" example/raytrace_temp_multithread
 
@@ -120,7 +120,7 @@ public:
 		rt.get_scene().random_diffuse_ray = 1;
 		rt.get_scene().average_light_points = 1;
 		rt.get_scene().random_diffuse_count = 8;
-		rt.get_scene().MAX_RAY_DEPTH = 4;
+		rt.get_scene().MAX_RAY_DEPTH = 64;
 		
 		// Surrounding
 		Plane* red_plane = new Plane(vec3(0, -50, 0) * SCALE, vec3(0, 1, 0));
@@ -166,10 +166,10 @@ public:
 		
 		Sphere* light_sphere = new Sphere(vec3(0, 20, 80) * SCALE, 10 * SCALE);
 		light_sphere->material.color = Color::WHITE;
-		light_sphere->material.luminosity = 1.0;
+		light_sphere->material.luminosity = 2.0;
 		light_sphere->material.surface_visible = 0;
 		light_sphere->material.luminosity_scaling = 1;
-		light_sphere->light_sectors_amount = 16;
+		light_sphere->setLightSectorsCount(16);
 		rt.get_scene().addObject(light_sphere);
 		
 		/*light_sphere = new Sphere(vec3(-10, 20, 60) * SCALE, 5 * SCALE);

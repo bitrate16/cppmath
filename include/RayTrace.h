@@ -5,6 +5,7 @@
 #include <limits>
 #include <iostream>
 #include <functional>
+#include <algorithm>
 
 #include "vec3.h"
 #include "Color.h"
@@ -101,12 +102,14 @@ namespace raytrace {
 	
 	class Sphere : public SceneObject {
 		
+		std::vector<cppmath::vec3> light_points;
+		int light_sectors_amount = 1;
+		
 	public:
 		
 		double radius;
 		cppmath::vec3 center;
 		ObjectMaterial material;
-		int light_sectors_amount = 1;
 		
 		Sphere(const cppmath::vec3& center, double radius) {
 			set(center, radius);
@@ -115,10 +118,51 @@ namespace raytrace {
 		void set(const cppmath::vec3& center, double radius) {
 			this->center = center;
 			this->radius = radius;
+			
+			// Move light points with sphere
+			setLightSectorsCount(light_sectors_amount);
 		};
 		
 		void setMaterial(const ObjectMaterial& material) {
 			this->material = material;
+		};
+		
+		void setLightSectorsCount(int lsc) {
+			light_sectors_amount = lsc <= 0 ? 1 : lsc;
+			
+			cppmath::vec3 n = cppmath::vec3(0, 1, 0);
+			
+			if (light_sectors_amount == 1) {
+				light_points = {center + n * radius, center - n * radius};
+				return;
+			}
+			
+			// Iterate over hemisphere and return set of points
+			light_points = std::vector<cppmath::vec3>(light_sectors_amount * (light_sectors_amount - 1) + 2);
+			
+			cppmath::vec3 u = cppmath::vec3(1, 0, 0);
+			cppmath::vec3 v = cppmath::vec3(0, 0, 1);
+				
+			double angle_step = 3.14159265358979323846 * 2.0 / (double) light_sectors_amount;
+			
+			int i = 0;
+			double uv_angle = 0.0;
+			double n_angle = angle_step;
+			
+			for (int f = 0; f < light_sectors_amount - 1; ++f) {
+				for (int t = 0; t < light_sectors_amount; ++t) {
+					double cs_n = std::cos(n_angle);
+					light_points[i++] = center + (u * cs_n * std::cos(uv_angle) + v * cs_n * std::sin(uv_angle) + n * std::sin(n_angle)).norm() * radius;
+					
+					uv_angle += angle_step;
+				}
+				
+				uv_angle = 0.0;
+				n_angle += angle_step;
+			}
+			
+			light_points[light_points.size() - 1] = center + n * radius;
+			light_points[light_points.size() - 2] = center - n * radius;
 		};
 		
 		TraceManifold hit(const ray& r) {
@@ -154,46 +198,7 @@ namespace raytrace {
 		};
 		
 		std::vector<cppmath::vec3> get_light_points(const cppmath::vec3& ray_origin) {
-			// std::vector<cppmath::vec3> points(light_points_amount);
-			// XXX: Generate n points on the normal hemisphere
-			light_sectors_amount = light_sectors_amount <= 0 ? 1 : light_sectors_amount;
-			
-			if (light_sectors_amount == 1)
-				return {center + (ray_origin - center).norm() * radius};
-			
-			// Iterate over hemisphere and return set of points
-			std::vector<cppmath::vec3> points(light_sectors_amount * light_sectors_amount * 4 + 1);
-			
-			cppmath::vec3 n = (ray_origin - center).norm();
-			cppmath::vec3 u = n.get_orthogonal().norm();
-			cppmath::vec3 v = cppmath::vec3::cross(n, u).norm();
-
-				//std::cout << "n = " << n << std::endl;
-				//std::cout << "u = " << u << std::endl;
-				//std::cout << "v = " << v << std::endl;
-				
-			double angle_step_n = 3.14159265358979323846 / 2.0 / (double) light_sectors_amount;
-			double angle_step_uv = 3.14159265358979323846 * 2.0 / (double) (light_sectors_amount * 4);
-			
-			int i = 0;
-			double uv_angle = 0.0;
-			double n_angle = 0.0;
-			
-			for (int f = 0; f < light_sectors_amount; ++f) {
-				for (int t = 0; t < light_sectors_amount * 4; ++t) {
-					double cs_n = std::cos(n_angle);
-					points[i++] = center + (u * cs_n * std::cos(uv_angle) + v * cs_n * std::sin(uv_angle) + n * std::sin(n_angle)).norm() * radius;
-					
-					uv_angle += angle_step_uv;
-				}
-				
-				uv_angle = 0.0;
-				n_angle += angle_step_n;
-			}
-			
-			points[points.size() - 1] = center + (ray_origin - center).norm() * radius;
-			
-			return points;
+			return light_points;
 		};
 		
 		cppmath::vec3 normal_at(const cppmath::vec3& point) {
@@ -203,14 +208,17 @@ namespace raytrace {
 	
 	class UVSphere : public SceneObject {
 		
+		std::vector<cppmath::vec3> light_points;
+		int light_sectors_amount = 1;
+		
 	public:
 		
 		double radius;
 		cppmath::vec3 center;
 		ObjectMaterial material;
+		
 		// Maps uv texture
 		std::function<spaint::Color(double, double)> uv_map = [](double u, double v) -> spaint::Color { return spaint::Color(0); };
-		int light_points_amount = 1;
 		
 		UVSphere(const cppmath::vec3& center, double radius) {
 			set(center, radius);
@@ -223,6 +231,44 @@ namespace raytrace {
 		
 		void setMaterial(const ObjectMaterial& material) {
 			this->material = material;
+		};
+		
+		void setLightSectorsCount(int lsc) {
+			light_sectors_amount = lsc <= 0 ? 1 : lsc;
+			
+			cppmath::vec3 n = cppmath::vec3(0, 1, 0);
+			
+			if (light_sectors_amount == 1) {
+				light_points = {center + n * radius, center - n * radius};
+				return;
+			}
+			
+			// Iterate over hemisphere and return set of points
+			light_points = std::vector<cppmath::vec3>(light_sectors_amount * (light_sectors_amount - 1) + 2);
+			
+			cppmath::vec3 u = cppmath::vec3(1, 0, 0);
+			cppmath::vec3 v = cppmath::vec3(0, 0, 1);
+				
+			double angle_step = 3.14159265358979323846 * 2.0 / (double) light_sectors_amount;
+			
+			int i = 0;
+			double uv_angle = 0.0;
+			double n_angle = angle_step;
+			
+			for (int f = 0; f < light_sectors_amount - 1; ++f) {
+				for (int t = 0; t < light_sectors_amount; ++t) {
+					double cs_n = std::cos(n_angle);
+					light_points[i++] = center + (u * cs_n * std::cos(uv_angle) + v * cs_n * std::sin(uv_angle) + n * std::sin(n_angle)).norm() * radius;
+					
+					uv_angle += angle_step;
+				}
+				
+				uv_angle = 0.0;
+				n_angle += angle_step;
+			}
+			
+			light_points[light_points.size() - 1] = center + n * radius;
+			light_points[light_points.size() - 2] = center - n * radius;
 		};
 		
 		TraceManifold hit(const ray& r) {
@@ -266,9 +312,7 @@ namespace raytrace {
 		};
 	
 		std::vector<cppmath::vec3> get_light_points(const cppmath::vec3& ray_origin) {
-			// std::vector<cppmath::vec3> points(light_points_amount);
-			// XXX: Generate n points on the normal hemisphere
-			return {center + (ray_origin - center).norm() * radius};
+			return light_points;
 		};
 		
 		cppmath::vec3 normal_at(const cppmath::vec3& point) {
@@ -684,13 +728,13 @@ namespace raytrace {
 						if (tmat.luminosity > 0) {
 							spaint::Color lumine = tmat.color;
 							// Apply object color mask
-							lumine.scale(closest_material.color);
+							lumine.scale_off_range(closest_material.color);
 							// Apply frag object emission value
-							lumine.scale(tmat.luminosity);
+							lumine.scale_off_range(tmat.luminosity);
 							// Apply material light diffuse value
-							lumine.scale(closest_material.diffuse);
+							lumine.scale_off_range(closest_material.diffuse);
 							// Scale by normal between source and surface
-							lumine.scale(-cppmath::vec3::cos_between(closest_hit.normal, objects[i]->normal_at(lp)));
+							lumine.scale_off_range(std::clamp(-cppmath::vec3::cos_between(closest_hit.normal, objects[i]->normal_at(lp)), 0.0, 1.0));
 							
 							// Calculate fake soft shadows
 							if (soft_shadows) {								
@@ -716,15 +760,14 @@ namespace raytrace {
 								}
 								
 								// Apply light in shadow
-								shadow_cos = shadow_cos < 0 ? 0.0 : (shadow_cos > 1.0 ? 1.0 : shadow_cos);
-								lumine.scale(shadow_cos);
+								lumine.scale_off_range(std::clamp(shadow_cos, 0.0, 1.0));
 							}
 							
 							// Apply color affect on surface
 							total_object_light.add_off_range(lumine);
 						}
 					}
-						
+					
 					// Scale by amount of light poimts
 					if (average_light_points)
 						total_object_light.scale(1.0 / (double) light_points.size());

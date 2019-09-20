@@ -45,7 +45,7 @@ class scene : public component {
 		updated = 1;
 		rt.camera = Camera(WIDTH, HEIGHT);
 		rt.set_background(Color::BLACK);
-		rt.get_scene().soft_shadows = 1;
+		//rt.get_scene().soft_shadows = 1;
 		//rt.get_scene().diffuse_light = 1;
 		rt.get_scene().use_shadows = 1;
 		rt.get_scene().average_light_points = 1;
@@ -122,10 +122,10 @@ class scene : public component {
 		
 		Sphere* light_sphere = new Sphere(vec3(0, 20, 80) * SCALE, 5 * SCALE);
 		light_sphere->material.color = Color::WHITE;
-		light_sphere->material.luminosity = 1.0;
+		light_sphere->material.luminosity = 2.0;
 		light_sphere->material.surface_visible = 1;
 		light_sphere->material.luminosity_scaling = 1;
-		light_sphere->light_sectors_amount = 2;
+		light_sphere->setLightSectorsCount(8);
 		rt.get_scene().addObject(light_sphere);
 		
 		light_sphere = new Sphere(vec3(-10, 20, 80) * SCALE, 5 * SCALE);

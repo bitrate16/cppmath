@@ -212,8 +212,8 @@ vec3 vec3::from_direction_cosines(double ax, double ay, double az) {
 
 double vec3::cos_between(const vec3& a, const vec3& b) {
 	double len = a.len() * b.len();
-	if (len == 0)
-		return 0;
+	if (len == 0.0)
+		return 0.0;
 	return dot(a, b) / len;
 };
 
