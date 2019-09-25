@@ -46,6 +46,7 @@ namespace cppmath {
 			x = y = z = r;
 		};
 		
+		/*
 		ivec3(double x, double y, double z) {
 			this->x = x;
 			this->y = y;
@@ -55,6 +56,7 @@ namespace cppmath {
 		ivec3(double r) {
 			x = y = z = r;
 		};
+		*/
 		
 		ivec3(const vec3& v) {
 			x = v.x;

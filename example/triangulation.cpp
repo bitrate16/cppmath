@@ -34,7 +34,7 @@ using namespace cppmath;
 
 // Right turn visualisation using spaint tool.
 
-// bash c.sh "-lX11" triangulation
+// bash c.sh "-lX11" example/triangulation
 
 class scene : public component {
 	

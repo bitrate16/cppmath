@@ -43,6 +43,7 @@ namespace cppmath {
 			x = y = r;
 		};
 		
+		/*
 		ivec2(double x, double y) {
 			this->x = x;
 			this->y = y;
@@ -51,6 +52,7 @@ namespace cppmath {
 		ivec2(double r) {
 			x = y = r;
 		};
+		*/
 		
 		ivec2(const vec2& v) {
 			x = v.x;
