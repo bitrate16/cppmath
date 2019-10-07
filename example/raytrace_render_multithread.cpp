@@ -43,7 +43,7 @@ using namespace raytrace;
 
 #define THREAD_COUNT 4
 
-#define WRITE_BINARY
+// #define WRITE_BINARY
 
 // #define ANTI_ALIASING
 
@@ -51,7 +51,7 @@ using namespace raytrace;
 #define HEIGHT 1000
 #define SCALE 4
 
-// bash c.sh "-lpthread" example/raytrace_temp_multithread
+// bash c.sh "-lpthread" example/raytrace_render_multithread
 
 class tracer;
 
@@ -110,6 +110,71 @@ public:
 	
 	void create_scene() {
 		// INIT SCENE
+		
+		// Scene 2
+		rt.camera = Camera(WIDTH, HEIGHT);
+		rt.set_background(Color::BLACK);
+		//rt.get_scene().diffuse_light = 1;
+		//rt.get_scene().soft_shadows = 1;
+		//rt.get_scene().use_shadows = 0;
+		rt.get_scene().average_light_points     = 1;
+		rt.get_scene().soft_shadows_scale       = 1.0;
+		rt.get_scene().GI_color                 = spaint::Color(1.0);
+		rt.get_scene().GI_intensivity           = 0.05;
+		// rt.get_scene().scale_light_above_normal = 1;
+		rt.get_scene().random_diffuse_ray       = 1;
+		rt.get_scene().random_diffuse_count     = 8;
+		rt.get_scene().MAX_RAY_DEPTH            = 16;
+		
+		Sphere* red_sphere = new Sphere(vec3(20, 20, 50) * SCALE, 5 * SCALE);
+		red_sphere->material.color = Color::RED;
+		red_sphere->material.luminosity = 0.0;
+		rt.get_scene().addObject(red_sphere);
+		
+		Sphere* green_sphere = new Sphere(vec3(15, -15, 50) * SCALE, 5 * SCALE);
+		green_sphere->material.color = Color::GREEN;
+		green_sphere->material.luminosity = 0.0;
+		rt.get_scene().addObject(green_sphere);
+		
+		Sphere* light_sphere = new Sphere(vec3(0, 20, 60) * SCALE, 5 * SCALE);
+		light_sphere->material.color = Color::WHITE;
+		light_sphere->material.luminosity = 2.0;
+		light_sphere->material.surface_visible = 0;
+		light_sphere->material.luminosity_scaling = 1;
+		light_sphere->setLightSectorsCount(8);
+		rt.get_scene().addObject(light_sphere);
+		
+		Sphere* metal_sphere = new Sphere(vec3(-20, -20, 70) * SCALE, 5 * SCALE);
+		metal_sphere->material.color = Color::BLUE;
+		metal_sphere->material.diffuse = 0.06;
+		metal_sphere->material.reflect = 0.90;
+		metal_sphere->material.refract = 0.04;
+		rt.get_scene().addObject(metal_sphere);
+		rt.get_scene().addObject(light_sphere);
+		
+		Sphere* glass_sphere = new Sphere(vec3(-5, 2, 80) * SCALE, 5 * SCALE);
+		glass_sphere->material.color = Color::WHITE;
+		glass_sphere->material.diffuse = 0.05;
+		glass_sphere->material.reflect = 0.05;
+		glass_sphere->material.refract = 0.90;
+		rt.get_scene().addObject(glass_sphere);
+		
+		// Glass planes
+		Plane* glass_plane = new Plane(vec3(0, 0, 100) * SCALE, vec3(0, 0, -1));
+		glass_plane->material.color = Color::WHITE;
+		glass_plane->material.diffuse = 0.006;
+		glass_plane->material.reflect = 0.990;
+		glass_plane->material.refract = 0.004;
+		rt.get_scene().addObject(glass_plane);
+		
+		glass_plane = new Plane(vec3(0, 0, -50) * SCALE, vec3(0, 0, 1));
+		glass_plane->material.color = Color::WHITE;
+		glass_plane->material.diffuse = 0.006;
+		glass_plane->material.reflect = 0.990;
+		glass_plane->material.refract = 0.004;
+		rt.get_scene().addObject(glass_plane);
+		
+		/* Scene 1
 		
 		rt.camera = Camera(WIDTH, HEIGHT);
 		rt.set_background(Color::BLACK);
@@ -172,19 +237,6 @@ public:
 		light_sphere->setLightSectorsCount(16);
 		rt.get_scene().addObject(light_sphere);
 		
-		/*light_sphere = new Sphere(vec3(-10, 20, 60) * SCALE, 5 * SCALE);
-		light_sphere->material.color = Color::RED;
-		light_sphere->material.luminosity = 0.2;
-		light_sphere->material.surface_visible = 0;
-		light_sphere->light_sectors_amount = 16;
-		rt.get_scene().addObject(light_sphere);
-		
-		light_sphere = new Sphere(vec3(20, -20, 100) * SCALE, 10 * SCALE);
-		light_sphere->material.color = Color::BLUE;
-		light_sphere->material.luminosity = 0.2;
-		light_sphere->material.surface_visible = 0;
-		light_sphere->light_sectors_amount = 16;
-		rt.get_scene().addObject(light_sphere);*/
 		
 		Sphere* white_sphere = new Sphere(vec3(10, 0, 100) * SCALE, 10 * SCALE);
 		white_sphere->material.color = Color::WHITE;
@@ -234,6 +286,21 @@ public:
 		white_sphere->material.reflect = 0.9;
 		white_sphere->material.diffuse = 0.1;
 		rt.get_scene().addObject(white_sphere);
+		*/
+		
+		/*light_sphere = new Sphere(vec3(-10, 20, 60) * SCALE, 5 * SCALE);
+		light_sphere->material.color = Color::RED;
+		light_sphere->material.luminosity = 0.2;
+		light_sphere->material.surface_visible = 0;
+		light_sphere->light_sectors_amount = 16;
+		rt.get_scene().addObject(light_sphere);
+		
+		light_sphere = new Sphere(vec3(20, -20, 100) * SCALE, 10 * SCALE);
+		light_sphere->material.color = Color::BLUE;
+		light_sphere->material.luminosity = 0.2;
+		light_sphere->material.surface_visible = 0;
+		light_sphere->light_sectors_amount = 16;
+		rt.get_scene().addObject(light_sphere);*/
 	};
 	
 	~tracer() {

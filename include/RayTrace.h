@@ -597,6 +597,12 @@ namespace raytrace {
 		int MAX_RAY_DEPTH = -1;
 		// When calculating light from many light point of a single object average summary amount of light
 		bool average_light_points = 0;
+		// Light value = cos_betwen(light_objects.normal, object.location - light_object.location)
+		bool scale_light_above_normal = 0;
+		// GI Color
+		spaint::Color GI_color;
+		// GI Intensivity
+		double GI_intensivity = 0.0;
 	
 		~RayTraceScene() {
 			for (int i = 0; i < objects.size(); ++i)
@@ -734,7 +740,9 @@ namespace raytrace {
 							// Apply material light diffuse value
 							lumine.scale_off_range(closest_material.diffuse);
 							// Scale by normal between source and surface
-							lumine.scale_off_range(std::clamp(-cppmath::vec3::cos_between(closest_hit.normal, objects[i]->normal_at(lp)), 0.0, 1.0));
+							lumine.scale_off_range(std::clamp(cppmath::vec3::cos_between(closest_hit.normal, lp - closest_hit.location), 0.0, 1.0));
+							if (scale_light_above_normal)
+								lumine.scale_off_range(std::clamp(-cppmath::vec3::cos_between(objects[i]->normal_at(lp), closest_hit.location - lp), 0.0, 1.0));
 							
 							// Calculate fake soft shadows
 							if (soft_shadows) {								
@@ -778,6 +786,13 @@ namespace raytrace {
 					
 				// Apply lighting in shadows and direct light
 				hitm.color += lighting;
+				
+				// Apply GI
+				spaint::Color GI_value = GI_color;
+				GI_value.scale(GI_intensivity);
+				GI_value.scale(closest_material.color);
+				GI_value.scale(closest_material.diffuse);
+				hitm.color += GI_value;
 					
 				// Calculatre real diffuse light from all other objects by shooting big amount of rays
 				if (diffuse_light) {					

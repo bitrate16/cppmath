@@ -35,7 +35,7 @@ using namespace raytrace;
 #define HEIGHT 1000
 #define SCALE 4
 
-// bash c.sh "-lX11" example/raytrace_temp
+// bash c.sh "-lX11" example/raytrace_render
 
 class tracer {
 	
