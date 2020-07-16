@@ -2,6 +2,7 @@
 
 #include <stdexcept>
 #include <functional>
+#include <iostream>
 #include <map>
 #include <string>
 #include <vector>
@@ -342,6 +343,12 @@ namespace math_func {
 					}
 					
 					tokens.push_back({ tmp });
+				} else if (in[i] == '-') {
+					++i;
+					tokens.push_back({ TMNS });
+				} else if (in[i] == '+') {
+					++i;
+					tokens.push_back({ TPLS });
 				} else if (	digit(in[i]) // i, i.
 							|| 
 							(i < in.size() - 1 // {-,+}i, {-,+}.
@@ -390,12 +397,6 @@ namespace math_func {
 					}
 					
 					tokens.push_back({ std::stod(tmp) });
-				} else if (in[i] == '-') {
-					++i;
-					tokens.push_back({ TMNS });
-				} else if (in[i] == '+') {
-					++i;
-					tokens.push_back({ TPLS });
 				} else if (in[i] == '*') {
 					++i;
 					tokens.push_back({ TMUL });
